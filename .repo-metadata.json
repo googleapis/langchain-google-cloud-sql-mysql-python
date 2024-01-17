@@ -1,0 +1,13 @@
+{
+    "name": "langchain-google-cloud-sql-mysql",
+    "name_pretty": "Cloud SQL for MySQL for LangChain - Python",
+    "issue_tracker": "https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues",
+    "client_documentation": "",
+    "release_level": "preview",
+    "language": "python",
+    "library_type": "OTHER",
+    "repo": "googleapis/langchain-google-cloud-sql-mysql-python",
+    "distribution_name": "langchain-google-cloud-sql-mysql",
+    "requires_billing": true,
+    "codeowner_team": "@googleapis/senseai-eco"
+}
