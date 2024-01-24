@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import google.auth
 import google.auth.transport.requests
@@ -73,13 +73,12 @@ class CloudSQLMySQLEngine:
         region: Optional[str] = None,
         instance: Optional[str] = None,
         database: Optional[str] = None,
-        engine: Optional[sqlalchemy.engine.Engine] = None,
     ) -> None:
         self._project_id = project_id
         self._region = region
         self._instance = instance
         self._database = database
-        self.engine = self._create_connector_engine() if engine is None else engine
+        self.engine = self._create_connector_engine()
 
     def close(self) -> None:
         """Utility method for closing the Cloud SQL Python Connector
@@ -123,39 +122,6 @@ class CloudSQLMySQLEngine:
             instance=instance,
             database=database,
         )
-
-    @classmethod
-    def from_engine(cls, engine: sqlalchemy.engine.Engine) -> CloudSQLMySQLEngine:
-        """Create an instance of CloudSQLMySQLEngine from an existing
-        SQLAlchemy engine.
-
-        Args:
-            engine (sqlalchemy.engine.Engine): An existing SQLAlchemy engine
-            to use.
-
-        Returns:
-            (CloudSQLMySQLEngine): The engine configured to connect to a
-                Cloud SQL instance database.
-        """
-        return cls(engine=engine)
-
-    @classmethod
-    def from_connection_string(
-        cls, connection_string: str, **kwargs: Any
-    ) -> CloudSQLMySQLEngine:
-        """Create an instance of CloudSQLMySQLEngine from a database
-        connection string.
-
-        Special characters such as those that may be used in the user and
-        password need to be URL encoded to be parsed correctly.
-
-        Args:
-            connection_string (str): A parsed connection string.
-                (ex. "mysql+pymysql://dbuser:dbpass@10.0.0.2/dbname")
-
-        """
-        engine = sqlalchemy.create_engine(connection_string, **kwargs)
-        return cls(engine=engine)
 
     def _create_connector_engine(self) -> sqlalchemy.engine.Engine:
         """Create a SQLAlchemy engine using the Cloud SQL Python Connector.
