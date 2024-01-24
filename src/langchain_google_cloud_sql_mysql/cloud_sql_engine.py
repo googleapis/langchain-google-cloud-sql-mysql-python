@@ -14,16 +14,17 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 import google.auth
-import google.auth.credentials
 import google.auth.transport.requests
-import pymysql
 import requests
 import sqlalchemy
 from google.cloud.sql.connector import Connector
-from typing_extensions import Self
+
+if TYPE_CHECKING:
+    import google.auth.credentials
+    import pymysql
 
 
 def _get_iam_principal_email(
@@ -67,30 +68,29 @@ class CloudSQLMySQLEngine:
     """A class for managing connections to a Cloud SQL for MySQL database."""
 
     def __init__(
-        self: Self,
+        self,
         project_id: Optional[str] = None,
         region: Optional[str] = None,
         instance: Optional[str] = None,
         database: Optional[str] = None,
         engine: Optional[sqlalchemy.engine.Engine] = None,
-    ) -> Self:
+    ) -> None:
         self._project_id = project_id
         self._region = region
         self._instance = instance
         self._database = database
-        self._connector = None
         self.engine = self._create_connector_engine() if engine is None else engine
 
-    def close(self: Self) -> None:
+    def close(self) -> None:
         """Utility method for closing the Cloud SQL Python Connector
         background tasks.
         """
-        if self._connector:
+        if hasattr(self, "_connector"):
             self._connector.close()
 
     @classmethod
     def from_instance(
-        cls: Type[Self],
+        cls,
         project_id: str,
         region: str,
         instance: str,
@@ -125,9 +125,7 @@ class CloudSQLMySQLEngine:
         )
 
     @classmethod
-    def from_engine(
-        cls: Type[Self], engine: sqlalchemy.engine.Engine
-    ) -> CloudSQLMySQLEngine:
+    def from_engine(cls, engine: sqlalchemy.engine.Engine) -> CloudSQLMySQLEngine:
         """Create an instance of CloudSQLMySQLEngine from an existing
         SQLAlchemy engine.
 
@@ -143,7 +141,7 @@ class CloudSQLMySQLEngine:
 
     @classmethod
     def from_connection_string(
-        cls: Type[Self], connection_string: str, **kwargs: Any
+        cls, connection_string: str, **kwargs: Any
     ) -> CloudSQLMySQLEngine:
         """Create an instance of CloudSQLMySQLEngine from a database
         connection string.
@@ -159,7 +157,7 @@ class CloudSQLMySQLEngine:
         engine = sqlalchemy.create_engine(connection_string, **kwargs)
         return cls(engine=engine)
 
-    def _create_connector_engine(self: Self) -> sqlalchemy.engine.Engine:
+    def _create_connector_engine(self) -> sqlalchemy.engine.Engine:
         """Create a SQLAlchemy engine using the Cloud SQL Python Connector.
 
         Defaults to use "pymysql" driver and to connect using automatic IAM
