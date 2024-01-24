@@ -51,4 +51,4 @@ jobs:
           isort --check .
 
       - name: Run type-check
-        run: mypy .
+        run: mypy --install-types --non-interactive .

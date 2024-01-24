@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import google.auth
 import google.auth.transport.requests
@@ -54,8 +54,8 @@ def _get_iam_principal_email(
     # call OAuth2 api to get IAM principal email associated with OAuth2 token
     url = f"https://oauth2.googleapis.com/tokeninfo?access_token={credentials.token}"
     response = requests.get(url)
-    response = response.json()
-    email = response.get("email")
+    response_json: Dict = response.json()
+    email = response_json.get("email")
     if email is None:
         raise ValueError(
             "Failed to automatically obtain authenticated IAM princpal's "
