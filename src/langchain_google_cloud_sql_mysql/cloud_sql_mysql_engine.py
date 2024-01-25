@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
 import google.auth
@@ -26,8 +25,6 @@ from google.cloud.sql.connector import Connector
 if TYPE_CHECKING:
     import google.auth.credentials
     import pymysql
-
-logger = logging.getLogger(__name__)
 
 
 def _get_iam_principal_email(

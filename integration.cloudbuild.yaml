@@ -25,10 +25,11 @@ steps:
     env:
       - 'PROJECT_ID=$PROJECT_ID'
       - 'INSTANCE_ID=$_INSTANCE_ID'
-      - 'DB_NAME=test'
+      - 'DB_NAME=$_DB_NAME'
       - 'TABLE_NAME=test-$BUILD_ID'
       - 'REGION=$_REGION'
 
 substitutions:
   _INSTANCE_ID: test-instance
   _REGION: us-central1
+  _DB_NAME: test
