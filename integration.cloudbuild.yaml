@@ -28,10 +28,8 @@ steps:
       - 'DB_NAME=test'
       - 'TABLE_NAME=$_TABLE_NAME'
       - 'REGION=$_REGION'
-      - 'IAM_USER=$_IAM_USER'
 
 substitutions:
   _INSTANCE_ID: test-instance
   _REGION: us-central1
   _TABLE_NAME: test-$BUILD_ID
-  _IAM_USER: ${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com

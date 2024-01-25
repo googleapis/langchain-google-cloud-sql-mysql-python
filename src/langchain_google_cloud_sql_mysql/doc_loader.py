@@ -16,7 +16,8 @@ from typing import Dict, List, Optional, cast
 import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
-from sqlalchemy.engine import Engine
+
+from . import CloudSQLMySQLEngine
 
 
 def _parse_doc_from_table(page_content_columns, metadata_columns, column_names, rows):
@@ -42,14 +43,14 @@ class CloudSQLMySQLDBLoader(BaseLoader):
 
     def __init__(
         self,
-        engine: Engine,  # CloudSQLEngine for the connection
+        engine: CloudSQLMySQLEngine,  # CloudSQLMySQLEngine for the connection
         query: str,  # Query in MySQL format
         page_content_columns: Optional[List[str]] = None,
         metadata_columns: Optional[List[str]] = None,
     ):
         """
         Args:
-          engine: CloudSQLEngine object to connect to the MySQL database.
+          engine: CloudSQLMySQLEngine object to connect to the MySQL database.
           query: The query to execute in MySQL format.
           page_content_columns: The columns to write into the `page_content`
              of the document. Optional.

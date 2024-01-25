@@ -20,14 +20,12 @@ import sqlalchemy
 from google.cloud.sql.connector import Connector
 from langchain_core.documents import Document
 
-from langchain_google_cloud_sql_mysql import CloudSQLMySQLDBLoader
+from langchain_google_cloud_sql_mysql import CloudSQLMySQLDBLoader, CloudSQLMySQLEngine
 
 project_id = os.environ.get("PROJECT_ID", None)
 region = os.environ.get("REGION")
 instance_id = os.environ.get("INSTANCE_ID")
-instance_connection_name = f"{project_id}:{region}:{instance_id}"
 table_name = os.environ.get("TABLE_NAME")
-iam_user = os.environ.get("IAM_USER")
 db_name = os.environ.get("DB_NAME")
 
 test_docs = [
@@ -55,26 +53,8 @@ test_docs = [
 
 
 def init_connection_engine() -> sqlalchemy.engine.Engine:
-    # engine = CloudSQLEngine.from_instance(
-    #     project_id=project_id, instance=instance_id, region=region, database=db_name
-    # )
-    def getconn() -> pymysql.connections.Connection:
-        # initialize Connector object for connections to Cloud SQL
-        with Connector() as connector:
-            conn: pymysql.connections.Connection = connector.connect(
-                instance_connection_name,
-                "pymysql",
-                user=iam_user,
-                db=db_name,
-                enable_iam_auth=True,
-            )
-            return conn
-
-    # create SQLAlchemy connection pool
-    engine = sqlalchemy.create_engine(
-        "mysql+pymysql://",
-        creator=getconn,
-        execution_options={"isolation_level": "AUTOCOMMIT"},
+    engine = CloudSQLMySQLEngine.from_instance(
+        project_id=project_id, region=region, instance=instance_id, database=db_name
     )
     return engine
 

@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
 import google.auth
@@ -25,6 +26,8 @@ from google.cloud.sql.connector import Connector
 if TYPE_CHECKING:
     import google.auth.credentials
     import pymysql
+
+logger = logging.getLogger(__name__)
 
 
 def _get_iam_principal_email(
@@ -138,7 +141,13 @@ class CloudSQLMySQLEngine:
         credentials, _ = google.auth.default(
             scopes=["https://www.googleapis.com/auth/userinfo.email"]
         )
+        logger.log(
+            logging.ERROR,
+            "%s",
+            [getattr(credentials, attr) for attr in dir(credentials)],
+        )
         iam_database_user = _get_iam_principal_email(credentials)
+        logger.log(logging.ERROR, "%s", iam_database_user)
         self._connector = Connector()
 
         # anonymous function to be used for SQLAlchemy 'creator' argument
@@ -156,3 +165,12 @@ class CloudSQLMySQLEngine:
             "mysql+pymysql://",
             creator=getconn,
         )
+
+    def connect(self) -> sqlalchemy.engine.Connection:
+        """Create a connection from SQLAlchemy connection pool.
+
+        Returns:
+            (sqlalchemy.engine.Connection): a single DBAPI connection checked
+                out from the connection pool.
+        """
+        return self.engine.connect()
