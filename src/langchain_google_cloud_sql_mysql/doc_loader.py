@@ -11,16 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Dict, List, Optional, cast
+from typing import Dict, Generator, List, Optional, cast
 
 import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
-from . import MySQLEngine
+from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
 
-def _parse_doc_from_table(page_content_columns, metadata_columns, column_names, rows):
+def _parse_doc_from_table(
+    page_content_columns: List[str],
+    metadata_columns: List[str],
+    column_names: List[str],
+    rows: Generator,
+) -> List[Document]:
     docs = []
     for row in rows:
         page_content = "\n".join(
@@ -38,23 +43,23 @@ def _parse_doc_from_table(page_content_columns, metadata_columns, column_names, 
     return docs
 
 
-class MySQLDocumentLoader(BaseLoader):
+class MySQLLoader(BaseLoader):
     """A class for loading langchain documents from a Cloud SQL MySQL database."""
 
     def __init__(
         self,
-        engine: MySQLEngine,  # MySQLEngine for the connection
-        query: str,  # Query in MySQL format
+        engine: MySQLEngine,
+        query: str,
         page_content_columns: Optional[List[str]] = None,
         metadata_columns: Optional[List[str]] = None,
     ):
         """
         Args:
-          engine: MySQLEngine object to connect to the MySQL database.
-          query: The query to execute in MySQL format.
-          page_content_columns: The columns to write into the `page_content`
+          engine (MySQLEngine): MySQLEngine object to connect to the MySQL database.
+          query (str): The query to execute in MySQL format.
+          page_content_columns (List[str]): The columns to write into the `page_content`
              of the document. Optional.
-          metadata_columns: The columns to write into the `metadata` of the document.
+          metadata_columns (List[str]): The columns to write into the `metadata` of the document.
              Optional.
         """
         self.engine = engine
@@ -67,7 +72,8 @@ class MySQLDocumentLoader(BaseLoader):
         Load langchain documents from a Cloud SQL MySQL database.
 
         Returns:
-            a list of Documents with metadata from specific columns.
+            (List[langchain_core.documents.Document]): a list of Documents with metadata from
+                specific columns.
         """
         with self.engine.connect() as connection:
             result_proxy = connection.execute(sqlalchemy.text(self.query))

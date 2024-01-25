@@ -20,7 +20,7 @@ import sqlalchemy
 from google.cloud.sql.connector import Connector
 from langchain_core.documents import Document
 
-from langchain_google_cloud_sql_mysql import MySQLDocumentLoader, MySQLEngine
+from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
 
 project_id = os.environ.get("PROJECT_ID", None)
 region = os.environ.get("REGION")
@@ -59,7 +59,7 @@ def init_connection_engine() -> sqlalchemy.engine.Engine:
     return engine
 
 
-@pytest.fixture(name="mysql")
+@pytest.fixture(name="engine")
 def setup() -> Generator:
     engine = init_connection_engine()
 
@@ -78,6 +78,18 @@ def setup() -> Generator:
                 """
             )
         )
+        conn.commit()
+
+    yield engine
+
+    with engine.connect() as conn:
+        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+        conn.commit()
+    engine.close()
+
+
+def test_load_from_query(engine):
+    with engine.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -92,19 +104,9 @@ def setup() -> Generator:
             )
         )
         conn.commit()
-
-    yield engine
-
-    with engine.connect() as conn:
-        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
-        conn.commit()
-
-
-def test_load_from_query(mysql):
     query = f"SELECT * FROM `{table_name}`;"
-
-    loader = MySQLDocumentLoader(
-        engine=mysql,
+    loader = MySQLLoader(
+        engine=engine,
         query=query,
         page_content_columns=[
             "fruit_name",
@@ -117,4 +119,5 @@ def test_load_from_query(mysql):
     )
 
     documents = loader.load()
+
     assert documents == test_docs
