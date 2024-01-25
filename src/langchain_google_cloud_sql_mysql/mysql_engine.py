@@ -44,9 +44,6 @@ def _get_iam_principal_email(
             The email address associated with the current authenticated IAM
             principal.
     """
-    # if credentials are associated with a service account email, return early
-    if hasattr(credentials, "_service_account_email"):
-        return credentials._service_account_email
     # refresh credentials if they are not valid
     if not credentials.valid:
         request = google.auth.transport.requests.Request()
@@ -64,7 +61,7 @@ def _get_iam_principal_email(
     return email
 
 
-class CloudSQLMySQLEngine:
+class MySQLEngine:
     """A class for managing connections to a Cloud SQL for MySQL database."""
 
     def __init__(
@@ -94,8 +91,8 @@ class CloudSQLMySQLEngine:
         region: str,
         instance: str,
         database: str,
-    ) -> CloudSQLMySQLEngine:
-        """Create an instance of CloudSQLMySQLEngine from Cloud SQL instance
+    ) -> MySQLEngine:
+        """Create an instance of MySQLEngine from Cloud SQL instance
         details.
 
         This method uses the Cloud SQL Python Connector to connect to Cloud SQL
@@ -113,7 +110,7 @@ class CloudSQLMySQLEngine:
                 Cloud SQL instance.
 
         Returns:
-            (CloudSQLMySQLEngine): The engine configured to connect to a
+            (MySQLEngine): The engine configured to connect to a
                 Cloud SQL instance database.
         """
         return cls(
@@ -156,3 +153,12 @@ class CloudSQLMySQLEngine:
             "mysql+pymysql://",
             creator=getconn,
         )
+
+    def connect(self) -> sqlalchemy.engine.Connection:
+        """Create a connection from SQLAlchemy connection pool.
+
+        Returns:
+            (sqlalchemy.engine.Connection): a single DBAPI connection checked
+                out from the connection pool.
+        """
+        return self.engine.connect()
