@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Dict, Generator, List, Optional, cast
+from collections.abc import Iterable
+from typing import Any, Dict, List, Optional, Sequence, cast
 
 import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
@@ -21,10 +22,10 @@ from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
 
 def _parse_doc_from_table(
-    page_content_columns: List[str],
-    metadata_columns: List[str],
-    column_names: List[str],
-    rows: Generator,
+    page_content_columns: Iterable[str],
+    metadata_columns: Iterable[str],
+    column_names: Iterable[str],
+    rows: Sequence[Any],
 ) -> List[Document]:
     docs = []
     for row in rows:

@@ -52,16 +52,11 @@ test_docs = [
 ]
 
 
-def init_connection_engine() -> sqlalchemy.engine.Engine:
+@pytest.fixture(name="engine")
+def setup() -> Generator:
     engine = MySQLEngine.from_instance(
         project_id=project_id, region=region, instance=instance_id, database=db_name
     )
-    return engine
-
-
-@pytest.fixture(name="engine")
-def setup() -> Generator:
-    engine = init_connection_engine()
 
     with engine.connect() as conn:
         conn.execute(
