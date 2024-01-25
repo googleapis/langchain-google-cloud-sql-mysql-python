@@ -25,12 +25,13 @@ steps:
     env:
       - 'PROJECT_ID=$PROJECT_ID'
       - 'INSTANCE_ID=$_INSTANCE_ID'
-      - 'DB_NAME=int-test'
+      - 'DB_NAME=test'
       - 'TABLE_NAME=$_TABLE_NAME'
-      - 'REGION=$LOCATION'
+      - 'REGION=$_REGION'
       - 'IAM_USER=$_IAM_USER'
 
 substitutions:
   _INSTANCE_ID: test-instance
+  _REGION: us-central1
   _TABLE_NAME: test-$BUILD_ID
   _IAM_USER: ${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com

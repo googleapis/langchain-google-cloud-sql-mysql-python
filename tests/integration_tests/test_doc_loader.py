@@ -18,6 +18,7 @@ import pymysql
 import pytest
 import sqlalchemy
 from google.cloud.sql.connector import Connector
+from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql import CloudSQLMySQLDBLoader
 
@@ -54,11 +55,8 @@ test_docs = [
 
 
 def init_connection_engine() -> sqlalchemy.engine.Engine:
-    # engine = cloudSQLEngine.from_instance(
-    #     project_id = os.environ.get("PROJECT_ID", None),
-    #     instance = os.environ.get("INSTANCE_NAME"),
-    #     region = os.environ.get("REGION_NAME"),
-    #     database = os.environ.get("DATABASE_NAME")
+    # engine = CloudSQLEngine.from_instance(
+    #     project_id=project_id, instance=instance_id, region=region, database=db_name
     # )
     def getconn() -> pymysql.connections.Connection:
         # initialize Connector object for connections to Cloud SQL
@@ -121,7 +119,7 @@ def setup() -> Generator:
 
 
 def test_load_from_query(engine):
-    query = f"SELECT * FROM {table_name};"
+    query = f"SELECT * FROM `{table_name}`;"
 
     loader = CloudSQLMySQLDBLoader(
         engine=engine,
