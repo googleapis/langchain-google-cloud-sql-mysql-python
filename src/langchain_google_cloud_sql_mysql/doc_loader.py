@@ -17,7 +17,7 @@ import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
-from . import CloudSQLMySQLEngine
+from . import MySQLEngine
 
 
 def _parse_doc_from_table(page_content_columns, metadata_columns, column_names, rows):
@@ -38,19 +38,19 @@ def _parse_doc_from_table(page_content_columns, metadata_columns, column_names, 
     return docs
 
 
-class CloudSQLMySQLDBLoader(BaseLoader):
+class MySQLDocumentLoader(BaseLoader):
     """A class for loading langchain documents from a Cloud SQL MySQL database."""
 
     def __init__(
         self,
-        engine: CloudSQLMySQLEngine,  # CloudSQLMySQLEngine for the connection
+        engine: MySQLEngine,  # MySQLEngine for the connection
         query: str,  # Query in MySQL format
         page_content_columns: Optional[List[str]] = None,
         metadata_columns: Optional[List[str]] = None,
     ):
         """
         Args:
-          engine: CloudSQLMySQLEngine object to connect to the MySQL database.
+          engine: MySQLEngine object to connect to the MySQL database.
           query: The query to execute in MySQL format.
           page_content_columns: The columns to write into the `page_content`
              of the document. Optional.

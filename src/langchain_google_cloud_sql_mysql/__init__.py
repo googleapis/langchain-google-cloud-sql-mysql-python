@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from langchain_google_cloud_sql_mysql.cloud_sql_mysql_engine import CloudSQLMySQLEngine
-from langchain_google_cloud_sql_mysql.doc_loader import CloudSQLMySQLDBLoader
+from langchain_google_cloud_sql_mysql.cloud_sql_mysql_engine import MySQLEngine
+from langchain_google_cloud_sql_mysql.doc_loader import MySQLDocumentLoader
 
-__all__ = ["CloudSQLMySQLEngine", "CloudSQLMySQLDBLoader"]
+__all__ = ["MySQLEngine", "MySQLDocumentLoader"]

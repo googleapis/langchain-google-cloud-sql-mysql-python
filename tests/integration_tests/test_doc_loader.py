@@ -20,7 +20,7 @@ import sqlalchemy
 from google.cloud.sql.connector import Connector
 from langchain_core.documents import Document
 
-from langchain_google_cloud_sql_mysql import CloudSQLMySQLDBLoader, CloudSQLMySQLEngine
+from langchain_google_cloud_sql_mysql import MySQLDocumentLoader, MySQLEngine
 
 project_id = os.environ.get("PROJECT_ID", None)
 region = os.environ.get("REGION")
@@ -53,7 +53,7 @@ test_docs = [
 
 
 def init_connection_engine() -> sqlalchemy.engine.Engine:
-    engine = CloudSQLMySQLEngine.from_instance(
+    engine = MySQLEngine.from_instance(
         project_id=project_id, region=region, instance=instance_id, database=db_name
     )
     return engine
@@ -103,7 +103,7 @@ def setup() -> Generator:
 def test_load_from_query(mysql):
     query = f"SELECT * FROM `{table_name}`;"
 
-    loader = CloudSQLMySQLDBLoader(
+    loader = MySQLDocumentLoader(
         engine=mysql,
         query=query,
         page_content_columns=[
