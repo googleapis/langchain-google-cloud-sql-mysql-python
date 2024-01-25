@@ -47,9 +47,6 @@ def _get_iam_principal_email(
             The email address associated with the current authenticated IAM
             principal.
     """
-    # if credentials are associated with a service account email, return early
-    if hasattr(credentials, "_service_account_email"):
-        return credentials._service_account_email
     # refresh credentials if they are not valid
     if not credentials.valid:
         request = google.auth.transport.requests.Request()
@@ -141,13 +138,7 @@ class CloudSQLMySQLEngine:
         credentials, _ = google.auth.default(
             scopes=["https://www.googleapis.com/auth/userinfo.email"]
         )
-        logger.log(
-            logging.ERROR,
-            "%s",
-            [getattr(credentials, attr) for attr in dir(credentials)],
-        )
         iam_database_user = _get_iam_principal_email(credentials)
-        logger.log(logging.ERROR, "%s", iam_database_user)
         self._connector = Connector()
 
         # anonymous function to be used for SQLAlchemy 'creator' argument

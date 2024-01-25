@@ -59,7 +59,7 @@ def init_connection_engine() -> sqlalchemy.engine.Engine:
     return engine
 
 
-@pytest.fixture(name="engine")
+@pytest.fixture(name="mysql")
 def setup() -> Generator:
     engine = init_connection_engine()
 
@@ -91,18 +91,20 @@ def setup() -> Generator:
                 """
             )
         )
+        conn.commit()
 
     yield engine
 
     with engine.connect() as conn:
         conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+        conn.commit()
 
 
-def test_load_from_query(engine):
+def test_load_from_query(mysql):
     query = f"SELECT * FROM `{table_name}`;"
 
     loader = CloudSQLMySQLDBLoader(
-        engine=engine,
+        engine=mysql,
         query=query,
         page_content_columns=[
             "fruit_name",
