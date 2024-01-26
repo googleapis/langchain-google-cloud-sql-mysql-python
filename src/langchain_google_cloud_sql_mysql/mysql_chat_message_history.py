@@ -33,6 +33,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
         self.engine = engine
         self.session_id = session_id
         self.table_name = table_name
+        self._create_table_if_not_exists()
 
     def _create_table_if_not_exists(self) -> None:
         create_table_query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} (
