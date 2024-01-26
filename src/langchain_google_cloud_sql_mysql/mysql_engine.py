@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# TODO: Remove below import when minimum supported Python version is 3.10
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Optional
@@ -64,25 +64,20 @@ def _get_iam_principal_email(
 class MySQLEngine:
     """A class for managing connections to a Cloud SQL for MySQL database."""
 
+    _connector: Optional[Connector] = None
+
     def __init__(
         self,
-        project_id: Optional[str] = None,
-        region: Optional[str] = None,
-        instance: Optional[str] = None,
-        database: Optional[str] = None,
+        engine: sqlalchemy.engine.Engine,
     ) -> None:
-        self._project_id = project_id
-        self._region = region
-        self._instance = instance
-        self._database = database
-        self.engine = self._create_connector_engine()
+        self.engine = engine
 
     def close(self) -> None:
         """Utility method for closing the Cloud SQL Python Connector
         background tasks.
         """
-        if hasattr(self, "_connector"):
-            self._connector.close()
+        if MySQLEngine._connector:
+            MySQLEngine._connector.close()
 
     @classmethod
     def from_instance(
@@ -113,20 +108,28 @@ class MySQLEngine:
             (MySQLEngine): The engine configured to connect to a
                 Cloud SQL instance database.
         """
-        return cls(
-            project_id=project_id,
-            region=region,
-            instance=instance,
+        engine = cls._create_connector_engine(
+            instance_connection_name=f"{project_id}:{region}:{instance}",
             database=database,
         )
+        return cls(engine=engine)
 
-    def _create_connector_engine(self) -> sqlalchemy.engine.Engine:
+    @classmethod
+    def _create_connector_engine(
+        cls, instance_connection_name: str, database: str
+    ) -> sqlalchemy.engine.Engine:
         """Create a SQLAlchemy engine using the Cloud SQL Python Connector.
 
         Defaults to use "pymysql" driver and to connect using automatic IAM
         database authentication with the IAM principal associated with the
         environment's Google Application Default Credentials.
 
+        Args:
+            instance_connection_name (str): The instance connection
+                name of the Cloud SQL instance to establish a connection to.
+                (ex. "project-id:instance-region:instance-name")
+            database (str): The name of the database to connect to on the
+                Cloud SQL instance.
         Returns:
             (sqlalchemy.engine.Engine): Engine configured using the Cloud SQL
                 Python Connector.
@@ -136,15 +139,16 @@ class MySQLEngine:
             scopes=["https://www.googleapis.com/auth/userinfo.email"]
         )
         iam_database_user = _get_iam_principal_email(credentials)
-        self._connector = Connector()
+        if cls._connector is None:
+            cls._connector = Connector()
 
         # anonymous function to be used for SQLAlchemy 'creator' argument
         def getconn() -> pymysql.Connection:
-            conn = self._connector.connect(
-                f"{self._project_id}:{self._region}:{self._instance}",
+            conn = cls._connector.connect(  # type: ignore
+                instance_connection_name,
                 "pymysql",
                 user=iam_database_user,
-                db=self._database,
+                db=database,
                 enable_iam_auth=True,
             )
             return conn
