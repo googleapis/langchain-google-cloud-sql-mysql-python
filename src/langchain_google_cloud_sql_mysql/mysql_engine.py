@@ -51,6 +51,7 @@ def _get_iam_principal_email(
     # call OAuth2 api to get IAM principal email associated with OAuth2 token
     url = f"https://oauth2.googleapis.com/tokeninfo?access_token={credentials.token}"
     response = requests.get(url)
+    response.raise_for_status()
     response_json: Dict = response.json()
     email = response_json.get("email")
     if email is None:
@@ -71,13 +72,6 @@ class MySQLEngine:
         engine: sqlalchemy.engine.Engine,
     ) -> None:
         self.engine = engine
-
-    def close(self) -> None:
-        """Utility method for closing the Cloud SQL Python Connector
-        background tasks.
-        """
-        if MySQLEngine._connector:
-            MySQLEngine._connector.close()
 
     @classmethod
     def from_instance(

@@ -55,7 +55,6 @@ def setup() -> Generator:
     with engine.connect() as conn:
         conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
         conn.commit()
-    engine.close()
 
 
 def test_load_from_query(engine):
