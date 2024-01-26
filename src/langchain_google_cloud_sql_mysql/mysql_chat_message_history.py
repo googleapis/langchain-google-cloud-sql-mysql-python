@@ -22,7 +22,7 @@ from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
 
 class MySQLChatMessageHistory(BaseChatMessageHistory):
-    """Chat message history stored in a Cloud SQL for MySQL database."""
+    """Chat message history stored in a Cloud SQL MySQL database."""
 
     def __init__(
         self,
@@ -73,6 +73,6 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
     def clear(self) -> None:
         """Clear session memory from Cloud SQL"""
         query = f"DELETE FROM {self.table_name} WHERE session_id = :session_id;"
-        with self.engine.connect() as connection:
-            connection.execute(sqlalchemy.text(query), {"session_id": self.session_id})
-            connection.commit()
+        with self.engine.connect() as conn:
+            conn.execute(sqlalchemy.text(query), {"session_id": self.session_id})
+            conn.commit()
