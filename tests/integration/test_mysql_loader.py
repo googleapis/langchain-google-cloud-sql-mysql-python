@@ -14,19 +14,17 @@
 import os
 from typing import Generator
 
-import pymysql
 import pytest
 import sqlalchemy
-from google.cloud.sql.connector import Connector
 from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
 
-project_id = os.environ.get("PROJECT_ID", None)
-region = os.environ.get("REGION")
-instance_id = os.environ.get("INSTANCE_ID")
-table_name = os.environ.get("TABLE_NAME")
-db_name = os.environ.get("DB_NAME")
+project_id = os.environ["PROJECT_ID"]
+region = os.environ["REGION"]
+instance_id = os.environ["INSTANCE_ID"]
+table_name = os.environ["TABLE_NAME"]
+db_name = os.environ["DB_NAME"]
 
 test_docs = [
     Document(

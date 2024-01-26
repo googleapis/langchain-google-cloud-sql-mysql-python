@@ -46,7 +46,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
             conn.commit()
 
     @property
-    def messages(self) -> List[BaseMessage]:
+    def messages(self) -> List[BaseMessage]:  # type: ignore
         """Retrieve the messages from Cloud SQL"""
         query = f"SELECT message FROM {self.table_name} WHERE session_id = '{self.session_id}' ORDER BY id;"
         with self.engine.connect() as conn:
