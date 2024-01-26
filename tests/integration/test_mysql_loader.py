@@ -26,29 +26,6 @@ instance_id = os.environ["INSTANCE_ID"]
 table_name = os.environ["TABLE_NAME"]
 db_name = os.environ["DB_NAME"]
 
-test_docs = [
-    Document(
-        page_content="fruit_name: Apple\nvariety: Granny Smith\nquantity_in_stock: 150\nprice_per_unit: 0.99\norganic: 1",
-        metadata={"fruit_id": 1},
-    ),
-    Document(
-        page_content="fruit_name: Banana\nvariety: Cavendish\nquantity_in_stock: 200\nprice_per_unit: 0.59\norganic: 0",
-        metadata={"fruit_id": 2},
-    ),
-    Document(
-        page_content="fruit_name: Orange\nvariety: Navel\nquantity_in_stock: 80\nprice_per_unit: 1.29\norganic: 1",
-        metadata={"fruit_id": 3},
-    ),
-    Document(
-        page_content="fruit_name: Strawberry\nvariety: Camarosa\nquantity_in_stock: 35\nprice_per_unit: 2.49\norganic: 1",
-        metadata={"fruit_id": 4},
-    ),
-    Document(
-        page_content="fruit_name: Grape\nvariety: Thompson Seedless\nquantity_in_stock: 120\nprice_per_unit: 1.99\norganic: 0",
-        metadata={"fruit_id": 5},
-    ),
-]
-
 
 @pytest.fixture(name="engine")
 def setup() -> Generator:
@@ -90,9 +67,7 @@ def test_load_from_query(engine):
                 VALUES
                     ('Apple', 'Granny Smith', 150, 0.99, 1),
                     ('Banana', 'Cavendish', 200, 0.59, 0),
-                    ('Orange', 'Navel', 80, 1.29, 1),
-                    ('Strawberry', 'Camarosa', 35, 2.49, 1),
-                    ('Grape', 'Thompson Seedless', 120, 1.99, 0);
+                    ('Orange', 'Navel', 80, 1.29, 1);
                 """
             )
         )
@@ -101,7 +76,7 @@ def test_load_from_query(engine):
     loader = MySQLLoader(
         engine=engine,
         query=query,
-        page_content_columns=[
+        content_columns=[
             "fruit_name",
             "variety",
             "quantity_in_stock",
@@ -113,4 +88,51 @@ def test_load_from_query(engine):
 
     documents = loader.load()
 
-    assert documents == test_docs
+    assert documents == [
+        Document(
+            page_content="Apple Granny Smith 150 0.99 1",
+            metadata={"fruit_id": 1},
+        ),
+        Document(
+            page_content="Banana Cavendish 200 0.59 0",
+            metadata={"fruit_id": 2},
+        ),
+        Document(
+            page_content="Orange Navel 80 1.29 1",
+            metadata={"fruit_id": 3},
+        ),
+    ]
+
+
+def test_load_from_query_default(engine):
+    with engine.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, 1);
+                """
+            )
+        )
+        conn.commit()
+
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=engine,
+        query=query,
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "variety": "Granny Smith",
+                "quantity_in_stock": 150,
+                "price_per_unit": 1,
+                "organic": 1,
+            },
+        )
+    ]
