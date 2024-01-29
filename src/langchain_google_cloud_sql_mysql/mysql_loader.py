@@ -88,9 +88,13 @@ class MySQLLoader(BaseLoader):
             result_proxy = connection.execute(sqlalchemy.text(self.query))
             column_names = list(result_proxy.keys())
             results = result_proxy.fetchall()
+            content_columns = self.content_columns or [column_names[0]]
+            metadata_columns = self.metadata_columns or [
+                col for col in column_names if col not in content_columns
+            ]
             return _parse_doc_from_table(
-                self.content_columns or [column_names[0]],
-                self.metadata_columns or column_names[1:],
+                content_columns,
+                metadata_columns,
                 column_names,
                 results,
             )

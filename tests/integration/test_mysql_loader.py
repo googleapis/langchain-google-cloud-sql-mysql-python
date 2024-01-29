@@ -57,7 +57,40 @@ def setup() -> Generator:
         conn.commit()
 
 
-def test_load_from_query(engine):
+def test_load_from_query_default(engine):
+    with engine.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, 1);
+                """
+            )
+        )
+        conn.commit()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=engine,
+        query=query,
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "variety": "Granny Smith",
+                "quantity_in_stock": 150,
+                "price_per_unit": 1,
+                "organic": 1,
+            },
+        )
+    ]
+
+
+def test_load_from_query_customized_content_customized_metadata(engine):
     with engine.connect() as conn:
         conn.execute(
             sqlalchemy.text(
@@ -103,7 +136,43 @@ def test_load_from_query(engine):
     ]
 
 
-def test_load_from_query_default(engine):
+def test_load_from_query_customized_content_default_metadata(engine):
+    with engine.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 0.99, 1);
+                """
+            )
+        )
+        conn.commit()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=engine,
+        query=query,
+        content_columns=[
+            "variety",
+            "quantity_in_stock",
+            "price_per_unit",
+        ],
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={
+                "fruit_id": 1,
+                "fruit_name": "Apple",
+                "organic": 1,
+            },
+        )
+    ]
+
+
+def test_load_from_query_default_content_customized_metadata(engine):
     with engine.connect() as conn:
         conn.execute(
             sqlalchemy.text(
@@ -120,6 +189,10 @@ def test_load_from_query_default(engine):
     loader = MySQLLoader(
         engine=engine,
         query=query,
+        metadata_columns=[
+            "fruit_name",
+            "organic",
+        ],
     )
 
     documents = loader.load()
@@ -128,9 +201,6 @@ def test_load_from_query_default(engine):
             page_content="1",
             metadata={
                 "fruit_name": "Apple",
-                "variety": "Granny Smith",
-                "quantity_in_stock": 150,
-                "price_per_unit": 1,
                 "organic": 1,
             },
         )
