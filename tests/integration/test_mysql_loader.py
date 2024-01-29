@@ -19,7 +19,11 @@ import pytest
 import sqlalchemy
 from langchain_core.documents import Document
 
-from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
+from langchain_google_cloud_sql_mysql import (
+    MySQLDocumentSaver,
+    MySQLEngine,
+    MySQLLoader,
+)
 
 project_id = os.environ["PROJECT_ID"]
 region = os.environ["REGION"]
@@ -181,6 +185,20 @@ def test_load_from_query_default_content_customized_metadata(default_setup):
         conn.execute(
             sqlalchemy.text(
                 f"""
+                CREATE TABLE IF NOT EXISTS `{table_name}`(
+                    fruit_id INT AUTO_INCREMENT PRIMARY KEY,
+                    fruit_name VARCHAR(100) NOT NULL,
+                    variety VARCHAR(50),  
+                    quantity_in_stock INT NOT NULL,
+                    price_per_unit DECIMAL(6,2) NOT NULL,
+                    organic TINYINT(1) NOT NULL
+                )
+                """
+            )
+        )
+        conn.execute(
+            sqlalchemy.text(
+                f"""
                 INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
                 VALUES
                     ('Apple', 'Granny Smith', 150, 1, 1);
@@ -258,3 +276,27 @@ def test_load_from_query_with_langchain_metadata(engine):
             },
         )
     ]
+
+
+def test_save_load_doc_by_table_name(engine):
+    test_docs = [
+        Document(
+            page_content="Apple Granny Smith 150 0.99 1",
+            metadata={"fruit_id": 1},
+        ),
+        Document(
+            page_content="Banana Cavendish 200 0.59 0",
+            metadata={"fruit_id": 2},
+        ),
+        Document(
+            page_content="Orange Navel 80 1.29 1",
+            metadata={"fruit_id": 3},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(engine=engine, table_name=table_name)
+
+    saver.add_documents(test_docs)
+    docs = loader.load()
+
+    assert docs == test_docs

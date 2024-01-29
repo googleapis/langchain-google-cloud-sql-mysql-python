@@ -42,6 +42,7 @@ def _parse_doc_from_table(
             for column in metadata_columns
             if column in column_names
         }
+        # load extra metadata from langchain_metadata column
         if DEFAULT_METADATA_COL in metadata:
             extra_metadata = json.loads(metadata[DEFAULT_METADATA_COL])
             del metadata[DEFAULT_METADATA_COL]
@@ -51,29 +52,49 @@ def _parse_doc_from_table(
     return docs
 
 
+def _parse_row_from_doc(metadata_columns: Iterable[str], doc: Document) -> Dict:
+    doc_metadata = doc.metadata.copy()
+    row = {"page_content": doc.page_content}
+    for entry in doc.metadata:
+        if entry in metadata_columns:
+            row[entry] = doc_metadata[entry]
+            del doc_metadata[entry]
+    # store extra metadata in langchain_metadata column in json format
+    if LANGCHAIN_METADATA in metadata_columns and len(doc_metadata) > 0:
+        row[LANGCHAIN_METADATA] = json.dumps(doc_metadata)
+    return row
+
+
 class MySQLLoader(BaseLoader):
     """A class for loading langchain documents from a Cloud SQL MySQL database."""
 
     def __init__(
         self,
         engine: MySQLEngine,
-        query: str,
+        table_name: str = "",
+        query: str = "",
         content_columns: Optional[List[str]] = None,
         metadata_columns: Optional[List[str]] = None,
     ):
         """
         Args:
           engine (MySQLEngine): MySQLEngine object to connect to the MySQL database.
-          query (str): The query to execute in MySQL format.
+          table_name (str): The MySQL database table name. (OneOf: table_name, query).
+          query (str): The query to execute in MySQL format.  (OneOf: table_name, query).
           content_columns (List[str]): The columns to write into the `page_content`
              of the document. Optional.
           metadata_columns (List[str]): The columns to write into the `metadata` of the document.
              Optional.
         """
         self.engine = engine
+        self.table_name = table_name
         self.query = query
         self.content_columns = content_columns
         self.metadata_columns = metadata_columns
+        if self.table_name == "" and self.query == "":
+            raise ValueError("One of table_name or query needs be specified.")
+        if self.table_name and self.query:
+            raise ValueError("Cannot specify both table_name and query.")
 
     def load(self) -> List[Document]:
         """
@@ -91,8 +112,13 @@ class MySQLLoader(BaseLoader):
             (List[langchain_core.documents.Document]): a list of Documents with metadata from
                 specific columns.
         """
+        stmt = None
+        if self.query:
+            stmt = sqlalchemy.text(self.query)
+        if self.table_name:
+            stmt = sqlalchemy.text(f"select * from `{self.table_name}`;")
         with self.engine.connect() as connection:
-            result_proxy = connection.execute(sqlalchemy.text(self.query))
+            result_proxy = connection.execute(stmt)
             column_names = list(result_proxy.keys())
             results = result_proxy.fetchall()
             content_columns = self.content_columns or [column_names[0]]
@@ -105,3 +131,50 @@ class MySQLLoader(BaseLoader):
                 column_names,
                 results,
             )
+
+
+class MySQLDocumentSaver:
+    """A class for saving langchain documents into a Cloud SQL MySQL database table."""
+
+    def __init__(
+        self,
+        engine: MySQLEngine,
+        table_name: str,
+    ):
+        """
+        Args:
+          engine: MySQLEngine object to connect to the MySQL database.
+          table_name: The name of table for saving documents.
+        """
+        self.engine = engine
+        self.table_name = table_name
+        self._create_table_if_not_exists()
+
+    def _create_table_if_not_exists(self) -> None:
+        create_table_query = f"""
+            CREATE TABLE IF NOT EXISTS `{self.table_name}` (
+                page_content LONGTEXT NOT NULL,
+                langchain_metadata LONGTEXT NOT NULL
+            );
+        """
+
+        with self.engine.connect() as conn:
+            conn.execute(sqlalchemy.text(create_table_query))
+            conn.commit()
+
+        self._table = self.engine.load_document_table(self.table_name)
+        self._columns = self._table.columns.keys()
+
+    def add_documents(self, docs: List[Document]):
+        with self.engine.connect() as conn:
+            for doc in docs:
+                row = _parse_row_from_doc(self._columns, doc)
+                conn.execute(sqlalchemy.insert(self._table).values(row))
+            conn.commit()
+
+    def delete(self, docs: List[Document]):
+        with self.engine.connect() as conn:
+            for doc in docs:
+                row = _parse_row_from_doc(self._columns, doc)
+                conn.execute(sqlalchemy.delete(self._table).values(row))
+            conn.commit()

@@ -15,7 +15,7 @@
 # TODO: Remove below import when minimum supported Python version is 3.10
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import google.auth
 import google.auth.transport.requests
@@ -164,3 +164,27 @@ class MySQLEngine:
                 out from the connection pool.
         """
         return self.engine.connect()
+
+    def init_document_table(
+        self,
+        table_name: str,
+        metadata_columns: List[sqlalchemy.Column] = [],
+        store_metadata: bool = True,
+    ):
+        if store_metadata:
+            metadata_columns.append(
+                sqlalchemy.Column(
+                    "langchain_metadata",
+                    sqlalchemy.UnicodeText,
+                    primary_key=False,
+                    nullable=True,
+                )
+            )
+        metadata = sqlalchemy.MetaData()
+        sqlalchemy.Table(table_name, metadata, *metadata_columns)
+        metadata.create_all(self.engine)
+
+    def load_document_table(self, table_name: str) -> sqlalchemy.Table:
+        metadata = sqlalchemy.MetaData()
+        sqlalchemy.MetaData.reflect(metadata, bind=self.engine)
+        return metadata.tables.get(table_name)
