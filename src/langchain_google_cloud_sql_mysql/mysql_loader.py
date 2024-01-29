@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 from collections.abc import Iterable
 from typing import Any, Dict, List, Optional, Sequence, cast
 
@@ -19,6 +20,8 @@ from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
+
+DEFAULT_METADATA_COL = "langchain_metadata"
 
 
 def _parse_doc_from_table(
@@ -39,6 +42,10 @@ def _parse_doc_from_table(
             for column in metadata_columns
             if column in column_names
         }
+        if DEFAULT_METADATA_COL in metadata:
+            extra_metadata = json.loads(metadata[DEFAULT_METADATA_COL])
+            del metadata[DEFAULT_METADATA_COL]
+            metadata |= extra_metadata
         doc = Document(page_content=page_content, metadata=metadata)
         docs.append(doc)
     return docs

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import os
 from typing import Generator
 
@@ -32,7 +33,15 @@ def setup() -> Generator:
     engine = MySQLEngine.from_instance(
         project_id=project_id, region=region, instance=instance_id, database=db_name
     )
+    yield engine
 
+    with engine.connect() as conn:
+        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+        conn.commit()
+
+
+@pytest.fixture
+def default_setup(engine):
     with engine.connect() as conn:
         conn.execute(
             sqlalchemy.text(
@@ -49,16 +58,11 @@ def setup() -> Generator:
             )
         )
         conn.commit()
-
     yield engine
 
-    with engine.connect() as conn:
-        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
-        conn.commit()
 
-
-def test_load_from_query_default(engine):
-    with engine.connect() as conn:
+def test_load_from_query_default(default_setup):
+    with default_setup.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -71,7 +75,7 @@ def test_load_from_query_default(engine):
         conn.commit()
     query = f"SELECT * FROM `{table_name}`;"
     loader = MySQLLoader(
-        engine=engine,
+        engine=default_setup,
         query=query,
     )
 
@@ -90,8 +94,8 @@ def test_load_from_query_default(engine):
     ]
 
 
-def test_load_from_query_customized_content_customized_metadata(engine):
-    with engine.connect() as conn:
+def test_load_from_query_customized_content_customized_metadata(default_setup):
+    with default_setup.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -106,7 +110,7 @@ def test_load_from_query_customized_content_customized_metadata(engine):
         conn.commit()
     query = f"SELECT * FROM `{table_name}`;"
     loader = MySQLLoader(
-        engine=engine,
+        engine=default_setup,
         query=query,
         content_columns=[
             "fruit_name",
@@ -136,8 +140,8 @@ def test_load_from_query_customized_content_customized_metadata(engine):
     ]
 
 
-def test_load_from_query_customized_content_default_metadata(engine):
-    with engine.connect() as conn:
+def test_load_from_query_customized_content_default_metadata(default_setup):
+    with default_setup.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -150,7 +154,7 @@ def test_load_from_query_customized_content_default_metadata(engine):
         conn.commit()
     query = f"SELECT * FROM `{table_name}`;"
     loader = MySQLLoader(
-        engine=engine,
+        engine=default_setup,
         query=query,
         content_columns=[
             "variety",
@@ -172,8 +176,8 @@ def test_load_from_query_customized_content_default_metadata(engine):
     ]
 
 
-def test_load_from_query_default_content_customized_metadata(engine):
-    with engine.connect() as conn:
+def test_load_from_query_default_content_customized_metadata(default_setup):
+    with default_setup.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -187,11 +191,60 @@ def test_load_from_query_default_content_customized_metadata(engine):
 
     query = f"SELECT * FROM `{table_name}`;"
     loader = MySQLLoader(
-        engine=engine,
+        engine=default_setup,
         query=query,
         metadata_columns=[
             "fruit_name",
             "organic",
+        ],
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "organic": 1,
+            },
+        )
+    ]
+
+
+def test_load_from_query_with_langchain_metadata(engine):
+    with engine.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                CREATE TABLE IF NOT EXISTS `{table_name}`(
+                    fruit_id INT AUTO_INCREMENT PRIMARY KEY,
+                    fruit_name VARCHAR(100) NOT NULL,
+                    variety VARCHAR(50),  
+                    quantity_in_stock INT NOT NULL,
+                    price_per_unit DECIMAL(6,2) NOT NULL,
+                    langchain_metadata JSON NOT NULL
+                )
+                """
+            )
+        )
+        metadata = json.dumps({"organic": 1})
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, langchain_metadata)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, '{metadata}');
+                """
+            )
+        )
+        conn.commit()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=engine,
+        query=query,
+        metadata_columns=[
+            "fruit_name",
+            "langchain_metadata",
         ],
     )
 
