@@ -40,3 +40,7 @@ warn_unused_configs = true
 exclude = [
     "owlbot.py"
 ]
+
+[[tool.mypy.overrides]]
+module="google.auth.*"
+ignore_missing_imports = true
