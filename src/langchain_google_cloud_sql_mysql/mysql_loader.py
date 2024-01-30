@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+import logging
 from collections.abc import Iterable
+from pprint import pprint
 from typing import Any, Dict, List, Optional, Sequence, cast
 
 import sqlalchemy
@@ -32,36 +34,42 @@ def _parse_doc_from_table(
 ) -> List[Document]:
     docs = []
     for row in rows:
-        page_content = " ".join(
-            str(getattr(row, column))
-            for column in content_columns
-            if column in column_names
-        )
-        metadata = {
-            column: getattr(row, column)
-            for column in metadata_columns
-            if column in column_names
-        }
-        # load extra metadata from langchain_metadata column
-        if DEFAULT_METADATA_COL in metadata:
-            extra_metadata = json.loads(metadata[DEFAULT_METADATA_COL])
-            del metadata[DEFAULT_METADATA_COL]
-            metadata |= extra_metadata
-        doc = Document(page_content=page_content, metadata=metadata)
+        row_data = {column: getattr(row, column) for column in column_names}
+        doc = _parse_doc_from_row(content_columns, metadata_columns, row_data)
         docs.append(doc)
     return docs
 
 
-def _parse_row_from_doc(metadata_columns: Iterable[str], doc: Document) -> Dict:
+def _parse_doc_from_row(
+    content_columns: Iterable[str], metadata_columns: Iterable[str], row: Dict
+) -> Document:
+    page_content = " ".join(
+        str(row[column]) for column in content_columns if column in row
+    )
+    metadata: Dict[str, Any] = {}
+    # load metadata from langchain_metadata column
+    if DEFAULT_METADATA_COL in row:
+        extra_metadata = json.loads(row[DEFAULT_METADATA_COL])
+        for k, v in extra_metadata.items():
+            if DEFAULT_METADATA_COL in metadata_columns or k in metadata_columns:
+                metadata[k] = v
+    # load metadata from other columns
+    for column in metadata_columns:
+        if column in row and column != DEFAULT_METADATA_COL:
+            metadata[column] = row[column]
+    return Document(page_content=page_content, metadata=metadata)
+
+
+def _parse_row_from_doc(column_names: Iterable[str], doc: Document) -> Dict:
     doc_metadata = doc.metadata.copy()
     row = {"page_content": doc.page_content}
     for entry in doc.metadata:
-        if entry in metadata_columns:
+        if entry in column_names:
             row[entry] = doc_metadata[entry]
             del doc_metadata[entry]
     # store extra metadata in langchain_metadata column in json format
-    if LANGCHAIN_METADATA in metadata_columns and len(doc_metadata) > 0:
-        row[LANGCHAIN_METADATA] = json.dumps(doc_metadata)
+    if DEFAULT_METADATA_COL in column_names and len(doc_metadata) > 0:
+        row[DEFAULT_METADATA_COL] = doc_metadata
     return row
 
 
@@ -153,28 +161,42 @@ class MySQLDocumentSaver:
     def _create_table_if_not_exists(self) -> None:
         create_table_query = f"""
             CREATE TABLE IF NOT EXISTS `{self.table_name}` (
-                page_content LONGTEXT NOT NULL,
-                langchain_metadata LONGTEXT NOT NULL
+                page_content TEXT NOT NULL,
+                langchain_metadata JSON
             );
         """
-
         with self.engine.connect() as conn:
             conn.execute(sqlalchemy.text(create_table_query))
             conn.commit()
 
         self._table = self.engine.load_document_table(self.table_name)
-        self._columns = self._table.columns.keys()
 
     def add_documents(self, docs: List[Document]):
         with self.engine.connect() as conn:
             for doc in docs:
-                row = _parse_row_from_doc(self._columns, doc)
+                row = _parse_row_from_doc(self._table.columns.keys(), doc)
                 conn.execute(sqlalchemy.insert(self._table).values(row))
             conn.commit()
 
     def delete(self, docs: List[Document]):
         with self.engine.connect() as conn:
             for doc in docs:
-                row = _parse_row_from_doc(self._columns, doc)
-                conn.execute(sqlalchemy.delete(self._table).values(row))
+                row = _parse_row_from_doc(self._table.columns.keys(), doc)
+                where_conditions = []
+                for col in self._table.columns:
+                    if str(col.type) == "JSON":
+                        where_conditions.append(
+                            sqlalchemy.func.json_contains(
+                                col,
+                                json.dumps(row[col.name]),
+                            )
+                        )
+                    else:
+                        where_conditions.append(col == row[col.name])
+                conn.execute(
+                    sqlalchemy.delete(self._table).where(
+                        sqlalchemy.and_(*where_conditions)
+                    ),
+                    row,
+                )
             conn.commit()

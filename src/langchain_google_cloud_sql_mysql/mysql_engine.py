@@ -171,17 +171,26 @@ class MySQLEngine:
         metadata_columns: List[sqlalchemy.Column] = [],
         store_metadata: bool = True,
     ):
+        columns = [
+            sqlalchemy.Column(
+                "page_content",
+                sqlalchemy.UnicodeText,
+                primary_key=False,
+                nullable=False,
+            )
+        ]
+        columns += metadata_columns
         if store_metadata:
-            metadata_columns.append(
+            columns.append(
                 sqlalchemy.Column(
                     "langchain_metadata",
-                    sqlalchemy.UnicodeText,
+                    sqlalchemy.JSON,
                     primary_key=False,
                     nullable=True,
                 )
             )
         metadata = sqlalchemy.MetaData()
-        sqlalchemy.Table(table_name, metadata, *metadata_columns)
+        sqlalchemy.Table(table_name, metadata, *columns)
         metadata.create_all(self.engine)
 
     def load_document_table(self, table_name: str) -> sqlalchemy.Table:

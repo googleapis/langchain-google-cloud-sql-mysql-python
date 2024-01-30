@@ -188,7 +188,7 @@ def test_load_from_query_default_content_customized_metadata(default_setup):
                 CREATE TABLE IF NOT EXISTS `{table_name}`(
                     fruit_id INT AUTO_INCREMENT PRIMARY KEY,
                     fruit_name VARCHAR(100) NOT NULL,
-                    variety VARCHAR(50),  
+                    variety VARCHAR(50),
                     quantity_in_stock INT NOT NULL,
                     price_per_unit DECIMAL(6,2) NOT NULL,
                     organic TINYINT(1) NOT NULL
@@ -237,7 +237,7 @@ def test_load_from_query_with_langchain_metadata(engine):
                 CREATE TABLE IF NOT EXISTS `{table_name}`(
                     fruit_id INT AUTO_INCREMENT PRIMARY KEY,
                     fruit_name VARCHAR(100) NOT NULL,
-                    variety VARCHAR(50),  
+                    variety VARCHAR(50),
                     quantity_in_stock INT NOT NULL,
                     price_per_unit DECIMAL(6,2) NOT NULL,
                     langchain_metadata JSON NOT NULL
@@ -278,7 +278,7 @@ def test_load_from_query_with_langchain_metadata(engine):
     ]
 
 
-def test_save_load_doc_by_table_name(engine):
+def test_save_doc_with_default_metadata(engine):
     test_docs = [
         Document(
             page_content="Apple Granny Smith 150 0.99 1",
@@ -300,3 +300,157 @@ def test_save_load_doc_by_table_name(engine):
     docs = loader.load()
 
     assert docs == test_docs
+    assert engine.load_document_table(table_name).columns.keys() == [
+        "page_content",
+        "langchain_metadata",
+    ]
+
+
+@pytest.mark.parametrize("store_metadata", [True, False])
+def test_save_doc_with_customized_metadata(engine, store_metadata):
+    engine.init_document_table(
+        table_name,
+        metadata_columns=[
+            sqlalchemy.Column(
+                "fruit_name",
+                sqlalchemy.UnicodeText,
+                primary_key=False,
+                nullable=True,
+            ),
+            sqlalchemy.Column(
+                "organic",
+                sqlalchemy.Boolean,
+                primary_key=False,
+                nullable=True,
+            ),
+        ],
+        store_metadata=store_metadata,
+    )
+    test_docs = [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={"fruit_id": 1, "fruit_name": "Apple", "organic": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(
+        engine=engine,
+        table_name=table_name,
+        metadata_columns=[
+            "fruit_id",
+            "fruit_name",
+            "organic",
+        ],
+    )
+
+    saver.add_documents(test_docs)
+    docs = loader.load()
+
+    if store_metadata:
+        docs == test_docs
+        assert engine.load_document_table(table_name).columns.keys() == [
+            "page_content",
+            "fruit_name",
+            "organic",
+            "langchain_metadata",
+        ]
+    else:
+        assert docs == [
+            Document(
+                page_content="Granny Smith 150 0.99",
+                metadata={"fruit_name": "Apple", "organic": 1},
+            ),
+        ]
+        assert engine.load_document_table(table_name).columns.keys() == [
+            "page_content",
+            "fruit_name",
+            "organic",
+        ]
+
+
+def test_save_doc_without_metadata(engine):
+    engine.init_document_table(
+        table_name,
+        store_metadata=False,
+    )
+    test_docs = [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={"fruit_id": 1, "fruit_name": "Apple", "organic": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(
+        engine=engine,
+        table_name=table_name,
+    )
+
+    saver.add_documents(test_docs)
+    docs = loader.load()
+
+    assert docs == [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={},
+        ),
+    ]
+    assert engine.load_document_table(table_name).columns.keys() == [
+        "page_content",
+    ]
+
+
+def test_delete_doc_with_default_metadata(engine):
+    test_docs = [
+        Document(
+            page_content="Apple Granny Smith 150 0.99 1",
+            metadata={"fruit_id": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(engine=engine, table_name=table_name)
+
+    saver.add_documents(test_docs)
+    docs = loader.load()
+    assert docs == test_docs
+
+    saver.delete(docs)
+    docs = loader.load()
+    assert len(docs) == 0
+
+
+@pytest.mark.parametrize("store_metadata", [True, False])
+def test_delete_doc_with_customized_metadata(engine, store_metadata):
+    engine.init_document_table(
+        table_name,
+        metadata_columns=[
+            sqlalchemy.Column(
+                "fruit_name",
+                sqlalchemy.UnicodeText,
+                primary_key=False,
+                nullable=True,
+            ),
+            sqlalchemy.Column(
+                "organic",
+                sqlalchemy.Boolean,
+                primary_key=False,
+                nullable=True,
+            ),
+        ],
+        store_metadata=store_metadata,
+    )
+    test_docs = [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={"fruit-id": 1, "fruit_name": "Apple", "organic": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(engine=engine, table_name=table_name)
+
+    saver.add_documents(test_docs)
+    docs = loader.load()
+    assert len(docs) == 1
+
+    saver.delete(docs)
+    docs = loader.load()
+    assert len(docs) == 0
