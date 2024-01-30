@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import os
 from typing import Generator
 
@@ -26,36 +27,21 @@ instance_id = os.environ["INSTANCE_ID"]
 table_name = os.environ["TABLE_NAME"]
 db_name = os.environ["DB_NAME"]
 
-test_docs = [
-    Document(
-        page_content="fruit_name: Apple\nvariety: Granny Smith\nquantity_in_stock: 150\nprice_per_unit: 0.99\norganic: 1",
-        metadata={"fruit_id": 1},
-    ),
-    Document(
-        page_content="fruit_name: Banana\nvariety: Cavendish\nquantity_in_stock: 200\nprice_per_unit: 0.59\norganic: 0",
-        metadata={"fruit_id": 2},
-    ),
-    Document(
-        page_content="fruit_name: Orange\nvariety: Navel\nquantity_in_stock: 80\nprice_per_unit: 1.29\norganic: 1",
-        metadata={"fruit_id": 3},
-    ),
-    Document(
-        page_content="fruit_name: Strawberry\nvariety: Camarosa\nquantity_in_stock: 35\nprice_per_unit: 2.49\norganic: 1",
-        metadata={"fruit_id": 4},
-    ),
-    Document(
-        page_content="fruit_name: Grape\nvariety: Thompson Seedless\nquantity_in_stock: 120\nprice_per_unit: 1.99\norganic: 0",
-        metadata={"fruit_id": 5},
-    ),
-]
-
 
 @pytest.fixture(name="engine")
 def setup() -> Generator:
     engine = MySQLEngine.from_instance(
         project_id=project_id, region=region, instance=instance_id, database=db_name
     )
+    yield engine
 
+    with engine.connect() as conn:
+        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+        conn.commit()
+
+
+@pytest.fixture
+def default_setup(engine):
     with engine.connect() as conn:
         conn.execute(
             sqlalchemy.text(
@@ -72,17 +58,44 @@ def setup() -> Generator:
             )
         )
         conn.commit()
-
     yield engine
 
-    with engine.connect() as conn:
-        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+
+def test_load_from_query_default(default_setup):
+    with default_setup.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, 1);
+                """
+            )
+        )
         conn.commit()
-    engine.close()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=default_setup,
+        query=query,
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "variety": "Granny Smith",
+                "quantity_in_stock": 150,
+                "price_per_unit": 1,
+                "organic": 1,
+            },
+        )
+    ]
 
 
-def test_load_from_query(engine):
-    with engine.connect() as conn:
+def test_load_from_query_customized_content_customized_metadata(default_setup):
+    with default_setup.connect() as conn:
         conn.execute(
             sqlalchemy.text(
                 f"""
@@ -90,18 +103,16 @@ def test_load_from_query(engine):
                 VALUES
                     ('Apple', 'Granny Smith', 150, 0.99, 1),
                     ('Banana', 'Cavendish', 200, 0.59, 0),
-                    ('Orange', 'Navel', 80, 1.29, 1),
-                    ('Strawberry', 'Camarosa', 35, 2.49, 1),
-                    ('Grape', 'Thompson Seedless', 120, 1.99, 0);
+                    ('Orange', 'Navel', 80, 1.29, 1);
                 """
             )
         )
         conn.commit()
     query = f"SELECT * FROM `{table_name}`;"
     loader = MySQLLoader(
-        engine=engine,
+        engine=default_setup,
         query=query,
-        page_content_columns=[
+        content_columns=[
             "fruit_name",
             "variety",
             "quantity_in_stock",
@@ -113,4 +124,137 @@ def test_load_from_query(engine):
 
     documents = loader.load()
 
-    assert documents == test_docs
+    assert documents == [
+        Document(
+            page_content="Apple Granny Smith 150 0.99 1",
+            metadata={"fruit_id": 1},
+        ),
+        Document(
+            page_content="Banana Cavendish 200 0.59 0",
+            metadata={"fruit_id": 2},
+        ),
+        Document(
+            page_content="Orange Navel 80 1.29 1",
+            metadata={"fruit_id": 3},
+        ),
+    ]
+
+
+def test_load_from_query_customized_content_default_metadata(default_setup):
+    with default_setup.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 0.99, 1);
+                """
+            )
+        )
+        conn.commit()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=default_setup,
+        query=query,
+        content_columns=[
+            "variety",
+            "quantity_in_stock",
+            "price_per_unit",
+        ],
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={
+                "fruit_id": 1,
+                "fruit_name": "Apple",
+                "organic": 1,
+            },
+        )
+    ]
+
+
+def test_load_from_query_default_content_customized_metadata(default_setup):
+    with default_setup.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, 1);
+                """
+            )
+        )
+        conn.commit()
+
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=default_setup,
+        query=query,
+        metadata_columns=[
+            "fruit_name",
+            "organic",
+        ],
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "organic": 1,
+            },
+        )
+    ]
+
+
+def test_load_from_query_with_langchain_metadata(engine):
+    with engine.connect() as conn:
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                CREATE TABLE IF NOT EXISTS `{table_name}`(
+                    fruit_id INT AUTO_INCREMENT PRIMARY KEY,
+                    fruit_name VARCHAR(100) NOT NULL,
+                    variety VARCHAR(50),  
+                    quantity_in_stock INT NOT NULL,
+                    price_per_unit DECIMAL(6,2) NOT NULL,
+                    langchain_metadata JSON NOT NULL
+                )
+                """
+            )
+        )
+        metadata = json.dumps({"organic": 1})
+        conn.execute(
+            sqlalchemy.text(
+                f"""
+                INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, langchain_metadata)
+                VALUES
+                    ('Apple', 'Granny Smith', 150, 1, '{metadata}');
+                """
+            )
+        )
+        conn.commit()
+    query = f"SELECT * FROM `{table_name}`;"
+    loader = MySQLLoader(
+        engine=engine,
+        query=query,
+        metadata_columns=[
+            "fruit_name",
+            "langchain_metadata",
+        ],
+    )
+
+    documents = loader.load()
+    assert documents == [
+        Document(
+            page_content="1",
+            metadata={
+                "fruit_name": "Apple",
+                "organic": 1,
+            },
+        )
+    ]
