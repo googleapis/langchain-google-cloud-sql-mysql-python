@@ -49,6 +49,9 @@ def _get_iam_principal_email(
     if not credentials.valid:
         request = google.auth.transport.requests.Request()
         credentials.refresh(request)
+    # if credentials are associated with a service account email, return early
+    if hasattr(credentials, "_service_account_email"):
+        return credentials._service_account_email
     # call OAuth2 api to get IAM principal email associated with OAuth2 token
     url = f"https://oauth2.googleapis.com/tokeninfo?access_token={credentials.token}"
     response = requests.get(url)
