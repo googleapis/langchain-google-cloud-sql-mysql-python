@@ -97,10 +97,13 @@ class MySQLLoader(BaseLoader):
         self.query = query
         self.content_columns = content_columns
         self.metadata_columns = metadata_columns
-        if self.table_name == "" and self.query == "":
-            raise ValueError("One of table_name or query needs be specified.")
+        if not self.table_name and not self.query:
+            raise ValueError("One of 'table_name' or 'query' must be specified.")
         if self.table_name and self.query:
-            raise ValueError("Cannot specify both table_name and query.")
+            raise ValueError(
+                "Cannot specify both 'table_name' and 'query'. Specify 'table_name' to load "
+                "entire table or 'query' to load a specific query."
+            )
 
     def load(self) -> List[Document]:
         """
