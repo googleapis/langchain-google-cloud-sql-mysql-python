@@ -185,20 +185,6 @@ def test_load_from_query_default_content_customized_metadata(default_setup):
         conn.execute(
             sqlalchemy.text(
                 f"""
-                CREATE TABLE IF NOT EXISTS `{table_name}`(
-                    fruit_id INT AUTO_INCREMENT PRIMARY KEY,
-                    fruit_name VARCHAR(100) NOT NULL,
-                    variety VARCHAR(50),
-                    quantity_in_stock INT NOT NULL,
-                    price_per_unit DECIMAL(6,2) NOT NULL,
-                    organic TINYINT(1) NOT NULL
-                )
-                """
-            )
-        )
-        conn.execute(
-            sqlalchemy.text(
-                f"""
                 INSERT INTO `{table_name}` (fruit_name, variety, quantity_in_stock, price_per_unit, organic)
                 VALUES
                     ('Apple', 'Granny Smith', 150, 1, 1);
