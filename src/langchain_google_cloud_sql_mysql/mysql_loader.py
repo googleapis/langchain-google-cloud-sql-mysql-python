@@ -121,10 +121,9 @@ class MySQLLoader(BaseLoader):
             (List[langchain_core.documents.Document]): a list of Documents with metadata from
                 specific columns.
         """
-        stmt = sqlalchemy.text("")
         if self.query:
             stmt = sqlalchemy.text(self.query)
-        if self.table_name:
+        else:
             stmt = sqlalchemy.text(f"select * from `{self.table_name}`;")
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
