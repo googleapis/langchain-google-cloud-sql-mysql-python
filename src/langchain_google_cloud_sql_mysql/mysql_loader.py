@@ -62,7 +62,7 @@ def _parse_doc_from_row(
 
 def _parse_row_from_doc(column_names: Iterable[str], doc: Document) -> Dict:
     doc_metadata = doc.metadata.copy()
-    row = {"page_content": doc.page_content}
+    row: Dict[str, Any] = {"page_content": doc.page_content}
     for entry in doc.metadata:
         if entry in column_names:
             row[entry] = doc_metadata[entry]
@@ -120,7 +120,7 @@ class MySQLLoader(BaseLoader):
             (List[langchain_core.documents.Document]): a list of Documents with metadata from
                 specific columns.
         """
-        stmt = None
+        stmt = sqlalchemy.text("")
         if self.query:
             stmt = sqlalchemy.text(self.query)
         if self.table_name:

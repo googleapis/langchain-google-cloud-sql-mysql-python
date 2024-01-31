@@ -215,4 +215,4 @@ class MySQLEngine:
         """
         metadata = sqlalchemy.MetaData()
         sqlalchemy.MetaData.reflect(metadata, bind=self.engine, only=[table_name])
-        return metadata.tables.get(table_name)
+        return metadata.tables[table_name]
