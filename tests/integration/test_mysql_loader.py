@@ -454,3 +454,50 @@ def test_delete_doc_with_customized_metadata(engine, store_metadata):
     saver.delete(docs)
     docs = loader.load()
     assert len(docs) == 0
+
+
+def test_delete_doc_with_query(engine):
+    engine.init_document_table(
+        table_name,
+        metadata_columns=[
+            sqlalchemy.Column(
+                "fruit_name",
+                sqlalchemy.UnicodeText,
+                primary_key=False,
+                nullable=True,
+            ),
+            sqlalchemy.Column(
+                "organic",
+                sqlalchemy.Boolean,
+                primary_key=False,
+                nullable=True,
+            ),
+        ],
+        store_metadata=True,
+    )
+    test_docs = [
+        Document(
+            page_content="Granny Smith 150 0.99",
+            metadata={"fruit-id": 1, "fruit_name": "Apple", "organic": 1},
+        ),
+        Document(
+            page_content="Cavendish 200 0.59 0",
+            metadata={"fruit_id": 2, "fruit_name": "Banana", "organic": 0},
+        ),
+        Document(
+            page_content="Navel 80 1.29 1",
+            metadata={"fruit_id": 3, "fruit_name": "Orange", "organic": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(engine=engine, table_name=table_name)
+    query = f"select * from `{table_name}` where fruit_name='Apple';"
+    query_loader = MySQLLoader(engine=engine, query=query)
+
+    saver.add_documents(test_docs)
+    docs = query_loader.load()
+    assert len(docs) == 1
+
+    saver.delete(docs)
+    docs = loader.load()
+    assert len(docs) == 2

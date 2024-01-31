@@ -170,7 +170,17 @@ class MySQLEngine:
         table_name: str,
         metadata_columns: List[sqlalchemy.Column] = [],
         store_metadata: bool = True,
-    ):
+    ) -> None:
+        """
+        Create a table for saving of langchain documents.
+
+        Args:
+            table_name (str): The MySQL database table name.
+            metadata_columns (List[str]): A list of SQLAlchemy Columns to create for custom metadata.
+                Optional.
+            store_metadata (bool): Whether to store extra metadata in a metadata column if not described
+                in “metadata” field list (Default: True).
+        """
         columns = [
             sqlalchemy.Column(
                 "page_content",
@@ -194,6 +204,15 @@ class MySQLEngine:
         metadata.create_all(self.engine)
 
     def load_document_table(self, table_name: str) -> sqlalchemy.Table:
+        """
+        Load table schema from existing table in MySQL database.
+
+        Args:
+            table_name (str): The MySQL database table name.
+
+        Returns:
+            (sqlalchemy.Table): The loaded table.
+        """
         metadata = sqlalchemy.MetaData()
-        sqlalchemy.MetaData.reflect(metadata, bind=self.engine)
+        sqlalchemy.MetaData.reflect(metadata, bind=self.engine, only=[table_name])
         return metadata.tables.get(table_name)

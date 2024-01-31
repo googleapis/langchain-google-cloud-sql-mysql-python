@@ -48,7 +48,7 @@ def _parse_doc_from_row(
     )
     metadata: Dict[str, Any] = {}
     # load metadata from langchain_metadata column
-    if DEFAULT_METADATA_COL in row:
+    if row.get(DEFAULT_METADATA_COL):
         extra_metadata = json.loads(row[DEFAULT_METADATA_COL])
         for k, v in extra_metadata.items():
             if DEFAULT_METADATA_COL in metadata_columns or k in metadata_columns:
@@ -150,6 +150,11 @@ class MySQLDocumentSaver:
         table_name: str,
     ):
         """
+        MySQLDocumentSaver allows for saving of langchain documents in dataabase. If the table
+        doesn't exists, a table with default schema will be created. The default schema:
+            - page_content (type: text)
+            - langchain_metadata (type: JSON)
+
         Args:
           engine: MySQLEngine object to connect to the MySQL database.
           table_name: The name of table for saving documents.
@@ -162,7 +167,7 @@ class MySQLDocumentSaver:
         create_table_query = f"""
             CREATE TABLE IF NOT EXISTS `{self.table_name}` (
                 page_content TEXT NOT NULL,
-                langchain_metadata JSON
+                {DEFAULT_METADATA_COL} JSON
             );
         """
         with self.engine.connect() as conn:
@@ -171,17 +176,32 @@ class MySQLDocumentSaver:
 
         self._table = self.engine.load_document_table(self.table_name)
 
-    def add_documents(self, docs: List[Document]):
+    def add_documents(self, docs: List[Document]) -> None:
+        """
+        Save documents in the DocumentSaver table. Document’s metadata is added to columns if found or
+        stored in langchain_metadata JSON column.
+
+        Args:
+            docs (List[langchain_core.documents.Document]): a list of documents to be saved.
+        """
         with self.engine.connect() as conn:
             for doc in docs:
                 row = _parse_row_from_doc(self._table.columns.keys(), doc)
                 conn.execute(sqlalchemy.insert(self._table).values(row))
             conn.commit()
 
-    def delete(self, docs: List[Document]):
+    def delete(self, docs: List[Document]) -> None:
+        """
+        Delete all instances of a document from the DocumentSaver table by matching the entire Document
+        object.
+
+        Args:
+            docs (List[langchain_core.documents.Document]): a list of documents to be deleted.
+        """
         with self.engine.connect() as conn:
             for doc in docs:
                 row = _parse_row_from_doc(self._table.columns.keys(), doc)
+                # delete by matching all fields of document
                 where_conditions = []
                 for col in self._table.columns:
                     if str(col.type) == "JSON":
@@ -196,7 +216,6 @@ class MySQLDocumentSaver:
                 conn.execute(
                     sqlalchemy.delete(self._table).where(
                         sqlalchemy.and_(*where_conditions)
-                    ),
-                    row,
+                    )
                 )
             conn.commit()
