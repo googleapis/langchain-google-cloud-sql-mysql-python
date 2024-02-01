@@ -17,6 +17,7 @@ from typing import Generator
 
 import pytest
 import sqlalchemy
+from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql import (
@@ -487,3 +488,26 @@ def test_delete_doc_with_query(engine):
     saver.delete(docs)
     docs = loader.load()
     assert len(docs) == 2
+
+
+def test_load_and_spilt(engine):
+    text_splitter = CharacterTextSplitter(
+        separator=" ",
+        chunk_size=10,
+        chunk_overlap=2,
+        length_function=len,
+        is_separator_regex=False,
+    )
+    test_docs = [
+        Document(
+            page_content="Apple Granny Smith 150 0.99 1",
+            metadata={"fruit_id": 1},
+        ),
+    ]
+    saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
+    loader = MySQLLoader(engine=engine, table_name=table_name)
+
+    saver.add_documents(test_docs)
+    docs = loader.load_and_split(text_splitter=text_splitter)
+
+    assert len(docs) == 4
