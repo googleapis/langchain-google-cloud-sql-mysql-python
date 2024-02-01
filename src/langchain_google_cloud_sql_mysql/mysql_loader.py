@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Sequence, cast
+from typing import Any, Dict, Iterator, List, Optional, Sequence, cast
 
 import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
@@ -22,20 +22,6 @@ from langchain_core.documents import Document
 from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
 DEFAULT_METADATA_COL = "langchain_metadata"
-
-
-def _parse_doc_from_table(
-    content_columns: Iterable[str],
-    metadata_columns: Iterable[str],
-    column_names: Iterable[str],
-    rows: Sequence[Any],
-) -> List[Document]:
-    docs = []
-    for row in rows:
-        row_data = {column: getattr(row, column) for column in column_names}
-        doc = _parse_doc_from_row(content_columns, metadata_columns, row_data)
-        docs.append(doc)
-    return docs
 
 
 def _parse_doc_from_row(
@@ -83,6 +69,14 @@ class MySQLLoader(BaseLoader):
         metadata_columns: Optional[List[str]] = None,
     ):
         """
+        Document page content defaults to the first columns present in the query or table and
+        metadata defaults to all other columns. Use with content_columns to overwrite the column
+        used for page content. Use metadata_columns to select specific metadata columns rather
+        than using all remaining columns.
+
+        If multiple content columns are specified, page_content’s string format will default to
+        space-separated string concatenation.
+
         Args:
           engine (MySQLEngine): MySQLEngine object to connect to the MySQL database.
           table_name (str): The MySQL database table name. (OneOf: table_name, query).
@@ -109,16 +103,19 @@ class MySQLLoader(BaseLoader):
         """
         Load langchain documents from a Cloud SQL MySQL database.
 
-        Document page content defaults to the first columns present in the query or table and
-        metadata defaults to all other columns. Use with content_columns to overwrite the column
-        used for page content. Use metadata_columns to select specific metadata columns rather
-        than using all remaining columns.
-
-        If multiple content columns are specified, page_content’s string format will default to
-        space-separated string concatenation.
-
         Returns:
             (List[langchain_core.documents.Document]): a list of Documents with metadata from
+                specific columns.
+        """
+        return list(self.lazy_load())
+
+    def lazy_load(self) -> Iterator[Document]:
+        """
+        Lazy Load langchain documents from a Cloud SQL MySQL database. Use lazy load to avoid
+        cache all document in memory at once.
+
+        Returns:
+            (Iterator[langchain_core.documents.Document]): a list of Documents with metadata from
                 specific columns.
         """
         if self.query:
@@ -128,17 +125,16 @@ class MySQLLoader(BaseLoader):
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
             column_names = list(result_proxy.keys())
-            results = result_proxy.fetchall()
             content_columns = self.content_columns or [column_names[0]]
             metadata_columns = self.metadata_columns or [
                 col for col in column_names if col not in content_columns
             ]
-            return _parse_doc_from_table(
-                content_columns,
-                metadata_columns,
-                column_names,
-                results,
-            )
+            while True:
+                row = result_proxy.fetchone()
+                if not row:
+                    break
+                row_data = {column: getattr(row, column) for column in column_names}
+                yield _parse_doc_from_row(content_columns, metadata_columns, row_data)
 
 
 class MySQLDocumentSaver:
