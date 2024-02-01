@@ -16,7 +16,7 @@ from typing import List
 
 import sqlalchemy
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
+from langchain_core.messages import BaseMessage, messages_from_dict
 
 from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
@@ -38,8 +38,9 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
     def _create_table_if_not_exists(self) -> None:
         create_table_query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          session_id TEXT NOT NULL,
-          message JSON NOT NULL
+          session_id VARCHAR(255) NOT NULL,
+          data JSON NOT NULL,
+          type VARCHAR(20) NOT NULL
         );"""
 
         with self.engine.connect() as conn:
@@ -49,23 +50,26 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
     @property
     def messages(self) -> List[BaseMessage]:  # type: ignore
         """Retrieve the messages from Cloud SQL"""
-        query = f"SELECT message FROM {self.table_name} WHERE session_id = '{self.session_id}' ORDER BY id;"
+        query = f"SELECT data, type FROM {self.table_name} WHERE session_id = '{self.session_id}' ORDER BY id;"
         with self.engine.connect() as conn:
             results = conn.execute(sqlalchemy.text(query)).fetchall()
         # load SQLAlchemy row objects into dicts
-        items = [json.loads(result[0]) for result in results]
+        items = [
+            {"data": json.loads(result[0]), "type": result[1]} for result in results
+        ]
         messages = messages_from_dict(items)
         return messages
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in Cloud SQL"""
-        query = f"INSERT INTO {self.table_name} (session_id, message) VALUES (:session_id, :message);"
+        query = f"INSERT INTO {self.table_name} (session_id, data, type) VALUES (:session_id, :data, :type);"
         with self.engine.connect() as conn:
             conn.execute(
                 sqlalchemy.text(query),
                 {
                     "session_id": self.session_id,
-                    "message": json.dumps(message_to_dict(message)),
+                    "data": json.dumps(message.dict()),
+                    "type": message.type,
                 },
             )
             conn.commit()
