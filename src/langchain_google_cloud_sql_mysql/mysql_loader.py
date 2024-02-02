@@ -168,7 +168,7 @@ class MySQLDocumentSaver:
         """
         self.engine = engine
         self.table_name = table_name
-        self._table = None
+        self._table: sqlalchemy.Table
         self._create_table_if_not_exists()
 
     def _create_table_if_not_exists(self) -> None:
