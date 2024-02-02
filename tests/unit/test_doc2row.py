@@ -128,3 +128,18 @@ def test_doc2row_store_extra_metadata():
             "organic": 1,
         },
     }
+
+
+def test_doc2row2doc_customized_metadata():
+    customized_metadatas = [
+        [],
+        ["fruit-id"],
+        ["fruit-id", "fruit_name", "organic"],
+        ["fruit-id", "fruit_name", "organic", "other"],
+    ]
+    for metadata in customized_metadatas:
+        assert test_doc == _parse_doc_from_row(
+            [DEFAULT_CONTENT_COL],
+            metadata + [DEFAULT_METADATA_COL],
+            _parse_row_from_doc(metadata + [DEFAULT_METADATA_COL], test_doc),
+        )
