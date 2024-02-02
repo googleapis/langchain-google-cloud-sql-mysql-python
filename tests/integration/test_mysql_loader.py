@@ -436,13 +436,20 @@ def test_delete_doc_with_customized_metadata(engine, store_metadata):
             page_content="Granny Smith 150 0.99",
             metadata={"fruit-id": 1, "fruit_name": "Apple", "organic": 1},
         ),
+        Document(
+            page_content="Cavendish 200 0.59 0",
+            metadata={"fruit_id": 2, "fruit_name": "Banana", "organic": 1},
+        ),
     ]
     saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
     loader = MySQLLoader(engine=engine, table_name=table_name)
 
     saver.add_documents(test_docs)
     docs = loader.load()
-    assert len(docs) == 1
+    assert len(docs) == 2
+
+    saver.delete(docs[:1])
+    assert len(loader.load()) == 1
 
     saver.delete(docs)
     assert len(loader.load()) == 0
