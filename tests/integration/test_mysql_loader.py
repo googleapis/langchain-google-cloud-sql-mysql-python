@@ -287,7 +287,7 @@ def test_save_doc_with_default_metadata(engine):
     docs = loader.load()
 
     assert docs == test_docs
-    assert engine.load_document_table(table_name).columns.keys() == [
+    assert engine._load_document_table(table_name).columns.keys() == [
         "page_content",
         "langchain_metadata",
     ]
@@ -335,7 +335,7 @@ def test_save_doc_with_customized_metadata(engine, store_metadata):
 
     if store_metadata:
         docs == test_docs
-        assert engine.load_document_table(table_name).columns.keys() == [
+        assert engine._load_document_table(table_name).columns.keys() == [
             "page_content",
             "fruit_name",
             "organic",
@@ -348,7 +348,7 @@ def test_save_doc_with_customized_metadata(engine, store_metadata):
                 metadata={"fruit_name": "Apple", "organic": 1},
             ),
         ]
-        assert engine.load_document_table(table_name).columns.keys() == [
+        assert engine._load_document_table(table_name).columns.keys() == [
             "page_content",
             "fruit_name",
             "organic",
@@ -381,7 +381,7 @@ def test_save_doc_without_metadata(engine):
             metadata={},
         ),
     ]
-    assert engine.load_document_table(table_name).columns.keys() == [
+    assert engine._load_document_table(table_name).columns.keys() == [
         "page_content",
     ]
 

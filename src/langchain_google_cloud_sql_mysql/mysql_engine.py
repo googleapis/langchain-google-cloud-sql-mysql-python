@@ -203,7 +203,7 @@ class MySQLEngine:
         sqlalchemy.Table(table_name, metadata, *columns)
         metadata.create_all(self.engine)
 
-    def load_document_table(self, table_name: str) -> sqlalchemy.Table:
+    def _load_document_table(self, table_name: str) -> sqlalchemy.Table:
         """
         Load table schema from existing table in MySQL database.
 

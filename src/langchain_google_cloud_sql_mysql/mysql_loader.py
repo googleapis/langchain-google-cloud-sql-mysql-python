@@ -15,12 +15,14 @@ import json
 from collections.abc import Iterable
 from typing import Any, Dict, Iterator, List, Optional, Sequence, cast
 
+import pymysql
 import sqlalchemy
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql.mysql_engine import MySQLEngine
 
+DEFAULT_CONTENT_COL = "page_content"
 DEFAULT_METADATA_COL = "langchain_metadata"
 
 
@@ -31,9 +33,9 @@ def _parse_doc_from_row(
         str(row[column]) for column in content_columns if column in row
     )
     metadata: Dict[str, Any] = {}
-    # load metadata from langchain_metadata column
+    # unnest metadata from langchain_metadata column
     if row.get(DEFAULT_METADATA_COL):
-        extra_metadata = json.loads(row[DEFAULT_METADATA_COL])
+        extra_metadata = row[DEFAULT_METADATA_COL]
         for k, v in extra_metadata.items():
             if DEFAULT_METADATA_COL in metadata_columns or k in metadata_columns:
                 metadata[k] = v
@@ -112,7 +114,7 @@ class MySQLLoader(BaseLoader):
     def lazy_load(self) -> Iterator[Document]:
         """
         Lazy Load langchain documents from a Cloud SQL MySQL database. Use lazy load to avoid
-        cache all document in memory at once.
+        cache all documents in memory at once.
 
         Returns:
             (Iterator[langchain_core.documents.Document]): a list of Documents with metadata from
@@ -124,6 +126,8 @@ class MySQLLoader(BaseLoader):
             stmt = sqlalchemy.text(f"select * from `{self.table_name}`;")
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
+            # Get field type information
+            field_types = [field[1] for field in result_proxy.cursor.description]
             column_names = list(result_proxy.keys())
             content_columns = self.content_columns or [column_names[0]]
             metadata_columns = self.metadata_columns or [
@@ -133,7 +137,14 @@ class MySQLLoader(BaseLoader):
                 row = result_proxy.fetchone()
                 if not row:
                     break
-                row_data = {column: getattr(row, column) for column in column_names}
+                # Handle JSON fields
+                row_data = {}
+                for column, field_type in zip(column_names, field_types):
+                    value = getattr(row, column)
+                    if field_type == pymysql.constants.FIELD_TYPE.JSON:
+                        row_data[column] = json.loads(value)
+                    else:
+                        row_data[column] = value
                 yield _parse_doc_from_row(content_columns, metadata_columns, row_data)
 
 
@@ -170,7 +181,7 @@ class MySQLDocumentSaver:
             conn.execute(sqlalchemy.text(create_table_query))
             conn.commit()
 
-        self._table = self.engine.load_document_table(self.table_name)
+        self._table = self.engine._load_document_table(self.table_name)
 
     def add_documents(self, docs: List[Document]) -> None:
         """
