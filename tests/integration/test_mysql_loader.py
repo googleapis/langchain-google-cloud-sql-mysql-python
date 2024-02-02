@@ -392,6 +392,10 @@ def test_delete_doc_with_default_metadata(engine):
             page_content="Apple Granny Smith 150 0.99 1",
             metadata={"fruit_id": 1},
         ),
+        Document(
+            page_content="Banana Cavendish 200 0.59 0 1",
+            metadata={"fruit_id": 2},
+        ),
     ]
     saver = MySQLDocumentSaver(engine=engine, table_name=table_name)
     loader = MySQLLoader(engine=engine, table_name=table_name)
@@ -400,9 +404,11 @@ def test_delete_doc_with_default_metadata(engine):
     docs = loader.load()
     assert docs == test_docs
 
+    saver.delete(docs[:1])
+    assert len(loader.load()) == 1
+
     saver.delete(docs)
-    docs = loader.load()
-    assert len(docs) == 0
+    assert len(loader.load()) == 0
 
 
 @pytest.mark.parametrize("store_metadata", [True, False])
@@ -439,8 +445,7 @@ def test_delete_doc_with_customized_metadata(engine, store_metadata):
     assert len(docs) == 1
 
     saver.delete(docs)
-    docs = loader.load()
-    assert len(docs) == 0
+    assert len(loader.load()) == 0
 
 
 def test_delete_doc_with_query(engine):
@@ -486,8 +491,7 @@ def test_delete_doc_with_query(engine):
     assert len(docs) == 1
 
     saver.delete(docs)
-    docs = loader.load()
-    assert len(docs) == 2
+    assert len(loader.load()) == 2
 
 
 def test_load_and_spilt(engine):

@@ -176,10 +176,10 @@ class MySQLEngine:
 
         Args:
             table_name (str): The MySQL database table name.
-            metadata_columns (List[str]): A list of SQLAlchemy Columns to create for custom metadata.
-                Optional.
-            store_metadata (bool): Whether to store extra metadata in a metadata column if not described
-                in “metadata” field list (Default: True).
+            metadata_columns (List[sqlalchemy.Column]): A list of SQLAlchemy Columns
+                to create for custom metadata. Optional.
+            store_metadata (bool): Whether to store extra metadata in a metadata column
+                if not described in 'metadata' field list (Default: True).
         """
         columns = [
             sqlalchemy.Column(

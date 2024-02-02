@@ -69,7 +69,7 @@ class MySQLLoader(BaseLoader):
         metadata_columns: Optional[List[str]] = None,
     ):
         """
-        Document page content defaults to the first columns present in the query or table and
+        Document page content defaults to the first column present in the query or table and
         metadata defaults to all other columns. Use with content_columns to overwrite the column
         used for page content. Use metadata_columns to select specific metadata columns rather
         than using all remaining columns.
@@ -125,8 +125,8 @@ class MySQLLoader(BaseLoader):
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
             # Get field type information
-            field_types = [
-                cast(tuple, field)[1] for field in result_proxy.cursor.description
+            column_types = [
+                cast(tuple, field)[0:2] for field in result_proxy.cursor.description
             ]
             column_names = list(result_proxy.keys())
             content_columns = self.content_columns or [column_names[0]]
@@ -139,7 +139,7 @@ class MySQLLoader(BaseLoader):
                     break
                 # Handle JSON fields
                 row_data = {}
-                for column, field_type in zip(column_names, field_types):
+                for column, field_type in column_types:
                     value = getattr(row, column)
                     if field_type == pymysql.constants.FIELD_TYPE.JSON:
                         row_data[column] = json.loads(value)
@@ -168,6 +168,7 @@ class MySQLDocumentSaver:
         """
         self.engine = engine
         self.table_name = table_name
+        self._table = None
         self._create_table_if_not_exists()
 
     def _create_table_if_not_exists(self) -> None:
