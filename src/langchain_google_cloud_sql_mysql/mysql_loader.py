@@ -127,7 +127,9 @@ class MySQLLoader(BaseLoader):
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
             # Get field type information
-            field_types = [field[1] for field in result_proxy.cursor.description]
+            field_types = [
+                cast(tuple, field)[1] for field in result_proxy.cursor.description
+            ]
             column_names = list(result_proxy.keys())
             content_columns = self.content_columns or [column_names[0]]
             metadata_columns = self.metadata_columns or [
