@@ -34,11 +34,9 @@ def _parse_doc_from_row(
     )
     metadata: Dict[str, Any] = {}
     # unnest metadata from langchain_metadata column
-    if row.get(DEFAULT_METADATA_COL):
-        extra_metadata = row[DEFAULT_METADATA_COL]
-        for k, v in extra_metadata.items():
-            if DEFAULT_METADATA_COL in metadata_columns or k in metadata_columns:
-                metadata[k] = v
+    if DEFAULT_METADATA_COL in metadata_columns and row.get(DEFAULT_METADATA_COL):
+        for k, v in row[DEFAULT_METADATA_COL].items():
+            metadata[k] = v
     # load metadata from other columns
     for column in metadata_columns:
         if column in row and column != DEFAULT_METADATA_COL:
