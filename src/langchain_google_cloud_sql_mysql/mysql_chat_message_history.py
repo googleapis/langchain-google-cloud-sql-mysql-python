@@ -36,7 +36,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
         self._create_table_if_not_exists()
 
     def _create_table_if_not_exists(self) -> None:
-        create_table_query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} (
+        create_table_query = f"""CREATE TABLE IF NOT EXISTS `{self.table_name}` (
           id INT AUTO_INCREMENT PRIMARY KEY,
           session_id TEXT NOT NULL,
           data JSON NOT NULL,
@@ -50,9 +50,11 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
     @property
     def messages(self) -> List[BaseMessage]:  # type: ignore
         """Retrieve the messages from Cloud SQL"""
-        query = f"SELECT data, type FROM {self.table_name} WHERE session_id = '{self.session_id}' ORDER BY id;"
+        query = f"SELECT data, type FROM `{self.table_name}` WHERE session_id = :session_id ORDER BY id;"
         with self.engine.connect() as conn:
-            results = conn.execute(sqlalchemy.text(query)).fetchall()
+            results = conn.execute(
+                sqlalchemy.text(query), {"session_id": self.session_id}
+            ).fetchall()
         # load SQLAlchemy row objects into dicts
         items = [
             {"data": json.loads(result[0]), "type": result[1]} for result in results
@@ -62,7 +64,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in Cloud SQL"""
-        query = f"INSERT INTO {self.table_name} (session_id, data, type) VALUES (:session_id, :data, :type);"
+        query = f"INSERT INTO `{self.table_name}` (session_id, data, type) VALUES (:session_id, :data, :type);"
         with self.engine.connect() as conn:
             conn.execute(
                 sqlalchemy.text(query),
@@ -76,7 +78,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
 
     def clear(self) -> None:
         """Clear session memory from Cloud SQL"""
-        query = f"DELETE FROM {self.table_name} WHERE session_id = :session_id;"
+        query = f"DELETE FROM `{self.table_name}` WHERE session_id = :session_id;"
         with self.engine.connect() as conn:
             conn.execute(sqlalchemy.text(query), {"session_id": self.session_id})
             conn.commit()
