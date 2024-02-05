@@ -56,3 +56,23 @@ def test_chat_message_history(memory_engine: MySQLEngine) -> None:
     # verify clear() clears message history
     history.clear()
     assert len(history.messages) == 0
+
+
+def test_chat_message_history_custom_table_name(memory_engine: MySQLEngine) -> None:
+    """Test MySQLChatMessageHistory with custom table name"""
+    history = MySQLChatMessageHistory(
+        engine=memory_engine, session_id="test", table_name="message-store"
+    )
+    history.add_user_message("hi!")
+    history.add_ai_message("whats up?")
+    messages = history.messages
+
+    # verify messages are correct
+    assert messages[0].content == "hi!"
+    assert type(messages[0]) is HumanMessage
+    assert messages[1].content == "whats up?"
+    assert type(messages[1]) is AIMessage
+
+    # verify clear() clears message history
+    history.clear()
+    assert len(history.messages) == 0
