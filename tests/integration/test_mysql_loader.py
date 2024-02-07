@@ -266,6 +266,7 @@ def test_load_from_query_with_langchain_metadata(engine):
 
 
 def test_save_doc_with_default_metadata(engine):
+    engine.init_document_table(table_name)
     test_docs = [
         Document(
             page_content="Apple Granny Smith 150 0.99 1",
@@ -387,6 +388,7 @@ def test_save_doc_without_metadata(engine):
 
 
 def test_delete_doc_with_default_metadata(engine):
+    engine.init_document_table(table_name)
     test_docs = [
         Document(
             page_content="Apple Granny Smith 150 0.99 1",
@@ -502,6 +504,7 @@ def test_delete_doc_with_query(engine):
 
 
 def test_load_and_spilt(engine):
+    engine.init_document_table(table_name)
     text_splitter = CharacterTextSplitter(
         separator=" ",
         chunk_size=10,

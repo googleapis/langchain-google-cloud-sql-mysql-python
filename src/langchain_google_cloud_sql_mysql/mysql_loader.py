@@ -46,7 +46,7 @@ def _parse_doc_from_row(
 
 def _parse_row_from_doc(column_names: Iterable[str], doc: Document) -> Dict:
     doc_metadata = doc.metadata.copy()
-    row: Dict[str, Any] = {"page_content": doc.page_content}
+    row: Dict[str, Any] = {DEFAULT_CONTENT_COL: doc.page_content}
     for entry in doc.metadata:
         if entry in column_names:
             row[entry] = doc_metadata[entry]
@@ -112,7 +112,7 @@ class MySQLLoader(BaseLoader):
     def lazy_load(self) -> Iterator[Document]:
         """
         Lazy Load langchain documents from a Cloud SQL MySQL database. Use lazy load to avoid
-        cache all documents in memory at once.
+        caching all documents in memory at once.
 
         Returns:
             (Iterator[langchain_core.documents.Document]): a list of Documents with metadata from
@@ -157,7 +157,7 @@ class MySQLDocumentSaver:
         table_name: str,
     ):
         """
-        MySQLDocumentSaver allows for saving of langchain documents in dataabase. If the table
+        MySQLDocumentSaver allows for saving of langchain documents in a database. If the table
         doesn't exists, a table with default schema will be created. The default schema:
             - page_content (type: text)
             - langchain_metadata (type: JSON)
@@ -168,21 +168,11 @@ class MySQLDocumentSaver:
         """
         self.engine = engine
         self.table_name = table_name
-        self._table: sqlalchemy.Table
-        self._create_table_if_not_exists()
-
-    def _create_table_if_not_exists(self) -> None:
-        create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS `{self.table_name}` (
-                page_content TEXT NOT NULL,
-                {DEFAULT_METADATA_COL} JSON
-            );
-        """
-        with self.engine.connect() as conn:
-            conn.execute(sqlalchemy.text(create_table_query))
-            conn.commit()
-
-        self._table = self.engine._load_document_table(self.table_name)
+        self._table = self.engine._load_document_table(table_name)
+        if DEFAULT_CONTENT_COL not in self._table.columns.keys():
+            raise ValueError(
+                f"Missing '{DEFAULT_CONTENT_COL}' field in table {table_name}."
+            )
 
     def add_documents(self, docs: List[Document]) -> None:
         """
