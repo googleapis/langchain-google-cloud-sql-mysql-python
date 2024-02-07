@@ -236,9 +236,9 @@ class MySQLEngine:
                     nullable=True,
                 )
             )
-        metadata = sqlalchemy.MetaData()
-        sqlalchemy.Table(table_name, metadata, *columns)
-        metadata.create_all(self.engine)
+        sqlalchemy.Table(table_name, sqlalchemy.MetaData(), *columns).create(
+            self.engine
+        )
 
     def _load_document_table(self, table_name: str) -> sqlalchemy.Table:
         """
