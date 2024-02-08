@@ -124,7 +124,13 @@ class MySQLLoader(BaseLoader):
             stmt = sqlalchemy.text(f"select * from `{self.table_name}`;")
         with self.engine.connect() as connection:
             result_proxy = connection.execute(stmt)
-            # Get field type information
+            # Get field type information.
+            # cursor.description is a sequence of 7-item sequences.
+            # Each of these sequences contains information describing one result column:
+            # - name, type_code, display_size, internal_size, precision, scale, null_ok
+            # The first two items (name and type_code) are mandatory, the other five are optional
+            # and are set to None if no meaningful values can be provided.
+            # link: https://peps.python.org/pep-0249/#description
             column_types = [
                 cast(tuple, field)[0:2] for field in result_proxy.cursor.description
             ]

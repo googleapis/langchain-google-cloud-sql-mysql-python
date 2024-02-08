@@ -46,32 +46,28 @@ row_customized_nested = {
 
 
 def test_row2doc_default():
-    assert (
-        _parse_doc_from_row([DEFAULT_CONTENT_COL], [DEFAULT_METADATA_COL], row_default)
-        == test_doc
+    doc = _parse_doc_from_row(
+        [DEFAULT_CONTENT_COL], [DEFAULT_METADATA_COL], row_default
     )
+    assert doc == test_doc
 
 
 def test_row2doc_customized():
-    assert (
-        _parse_doc_from_row(
-            ["variety", "quantity_in_stock", "price_per_unit"],
-            ["fruit-id", "fruit_name", "organic"],
-            row_customized_flat,
-        )
-        == test_doc
+    doc = _parse_doc_from_row(
+        ["variety", "quantity_in_stock", "price_per_unit"],
+        ["fruit-id", "fruit_name", "organic"],
+        row_customized_flat,
     )
+    assert doc == test_doc
 
 
 def test_row2doc_unnest_default_metadata():
-    assert (
-        _parse_doc_from_row(
-            ["variety", "quantity_in_stock", "price_per_unit"],
-            ["langchain_metadata"],
-            row_customized_nested,
-        )
-        == test_doc
+    doc = _parse_doc_from_row(
+        ["variety", "quantity_in_stock", "price_per_unit"],
+        ["langchain_metadata"],
+        row_customized_nested,
     )
+    assert doc == test_doc
 
 
 def test_row2doc_ovrride_default_metadata():
