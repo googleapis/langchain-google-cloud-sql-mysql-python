@@ -27,6 +27,8 @@ db_password = os.environ["DB_PASSWORD"]
 
 def test_mysql_engine_with_basic_auth() -> None:
     """Test MySQLEngine works with basic user/password auth."""
+    # override MySQLEngine._connector to allow a new Connector to be initiated
+    MySQLEngine._connector = None
     engine = MySQLEngine.from_instance(
         project_id=project_id,
         region=region,
@@ -40,3 +42,5 @@ def test_mysql_engine_with_basic_auth() -> None:
         res = conn.execute(sqlalchemy.text("SELECT 1")).fetchone()
         conn.commit()
         assert res[0] == 1
+    # reset MySQLEngine._connector to allow a new Connector to be initiated
+    MySQLEngine._connector = None
