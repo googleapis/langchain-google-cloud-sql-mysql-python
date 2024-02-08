@@ -134,7 +134,9 @@ class MySQLEngine:
 
         Defaults to use "pymysql" driver and to connect using automatic IAM
         database authentication with the IAM principal associated with the
-        environment's Google Application Default Credentials.
+        environment's Google Application Default Credentials. If user and
+        password arguments are given, basic database authentication will be
+        used for database login.
 
         Args:
             instance_connection_name (str): The instance connection
