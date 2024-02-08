@@ -84,13 +84,17 @@ class MySQLEngine:
         region: str,
         instance: str,
         database: str,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> MySQLEngine:
         """Create an instance of MySQLEngine from Cloud SQL instance
         details.
 
         This method uses the Cloud SQL Python Connector to connect to Cloud SQL
         using automatic IAM database authentication with the Google ADC
-        credentials sourced from the environment.
+        credentials sourced from the environment by default. If user and
+        password arguments are given, basic database authentication will be
+        used for database login.
 
         More details can be found at https://github.com/GoogleCloudPlatform/cloud-sql-python-connector#credentials
 
@@ -101,6 +105,10 @@ class MySQLEngine:
             instance (str): The name of the Cloud SQL instance.
             database (str): The name of the database to connect to on the
                 Cloud SQL instance.
+            user (str, optional): Database user to use for basic database
+                authentication and login. Defaults to None.
+            password (str, optional): Database password for 'user' to use for
+                basic database authentication and login. Defaults to None.
 
         Returns:
             (MySQLEngine): The engine configured to connect to a
@@ -109,12 +117,18 @@ class MySQLEngine:
         engine = cls._create_connector_engine(
             instance_connection_name=f"{project_id}:{region}:{instance}",
             database=database,
+            user=user,
+            password=password,
         )
         return cls(engine=engine)
 
     @classmethod
     def _create_connector_engine(
-        cls, instance_connection_name: str, database: str
+        cls,
+        instance_connection_name: str,
+        database: str,
+        user: Optional[str],
+        password: Optional[str],
     ) -> sqlalchemy.engine.Engine:
         """Create a SQLAlchemy engine using the Cloud SQL Python Connector.
 
@@ -128,15 +142,29 @@ class MySQLEngine:
                 (ex. "project-id:instance-region:instance-name")
             database (str): The name of the database to connect to on the
                 Cloud SQL instance.
+            user (str, optional): Database user to use for basic database
+                authentication and login. Defaults to None.
+            password (str, optional): Database password for 'user' to use for
+                basic database authentication and login. Defaults to None.
+
         Returns:
             (sqlalchemy.engine.Engine): Engine configured using the Cloud SQL
                 Python Connector.
         """
-        # get application default credentials
-        credentials, _ = google.auth.default(
-            scopes=["https://www.googleapis.com/auth/userinfo.email"]
-        )
-        iam_database_user = _get_iam_principal_email(credentials)
+        # if user and password are given, use basic auth
+        if user and password:
+            enable_iam_auth = False
+            db_user = user
+
+        # otherwise use automatic IAM database authentication
+        else:
+            # get application default credentials
+            credentials, _ = google.auth.default(
+                scopes=["https://www.googleapis.com/auth/userinfo.email"]
+            )
+            db_user = _get_iam_principal_email(credentials)
+            enable_iam_auth = True
+
         if cls._connector is None:
             cls._connector = Connector()
 
@@ -145,9 +173,10 @@ class MySQLEngine:
             conn = cls._connector.connect(  # type: ignore
                 instance_connection_name,
                 "pymysql",
-                user=iam_database_user,
+                user=db_user,
+                password=password,
                 db=database,
-                enable_iam_auth=True,
+                enable_iam_auth=enable_iam_auth,
             )
             return conn
 
