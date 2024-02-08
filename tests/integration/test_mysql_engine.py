@@ -41,6 +41,6 @@ def test_mysql_engine_with_basic_auth() -> None:
     with engine.connect() as conn:
         res = conn.execute(sqlalchemy.text("SELECT 1")).fetchone()
         conn.commit()
-        assert res[0] == 1
+        assert res[0] == 1  # type: ignore
     # reset MySQLEngine._connector to allow a new Connector to be initiated
     MySQLEngine._connector = None
