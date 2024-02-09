@@ -114,6 +114,13 @@ class MySQLEngine:
             (MySQLEngine): The engine configured to connect to a
                 Cloud SQL instance database.
         """
+        # error if only one of user or password is set, must be both or neither
+        if bool(user) ^ bool(password):
+            raise ValueError(
+                "Only one of 'user' or 'password' were specified. Either "
+                "both should be specified to use basic user/password "
+                "authentication or neither for IAM DB authentication."
+            )
         engine = cls._create_connector_engine(
             instance_connection_name=f"{project_id}:{region}:{instance}",
             database=database,
@@ -157,7 +164,6 @@ class MySQLEngine:
         if user and password:
             enable_iam_auth = False
             db_user = user
-
         # otherwise use automatic IAM database authentication
         else:
             # get application default credentials
