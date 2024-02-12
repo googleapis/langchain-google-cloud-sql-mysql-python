@@ -38,7 +38,7 @@ source <your-env>/bin/activate
 Use a document loader to load data as LangChain `Document`s.
 
 ```python
-from langchain_google_cloud_sql_pg import MySQLEngine, MySQLLoader
+from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
 
 
 engine = MySQLEngine.from_instance("project-id", "region", "my-instance", "my-database")
