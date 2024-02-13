@@ -294,11 +294,9 @@ def test_save_doc_with_default_metadata(engine):
     ]
 
 
-@pytest.mark.parametrize("content_column", [None, "content_col_test"])
 @pytest.mark.parametrize("metadata_json_column", [None, "metadata_col_test"])
-def test_save_doc_with_customized_metadata(
-    engine, content_column, metadata_json_column
-):
+def test_save_doc_with_customized_metadata(engine, metadata_json_column):
+    content_column = "content_col_test"
     engine.init_document_table(
         table_name,
         metadata_columns=[
@@ -333,12 +331,12 @@ def test_save_doc_with_customized_metadata(
     loader = MySQLLoader(
         engine=engine,
         table_name=table_name,
-        content_culumns=[content_column],
+        content_columns=[content_column],
         metadata_columns=[
-            "fruit_id",
             "fruit_name",
             "organic",
-        ],
+        ]
+        + ([metadata_json_column] if metadata_json_column else []),
         metadata_json_column=metadata_json_column,
     )
 
@@ -348,7 +346,7 @@ def test_save_doc_with_customized_metadata(
     if metadata_json_column:
         docs == test_docs
         assert engine._load_document_table(table_name).columns.keys() == [
-            content_column if content_column else "page_content",
+            content_column,
             "fruit_name",
             "organic",
             metadata_json_column,
@@ -361,7 +359,7 @@ def test_save_doc_with_customized_metadata(
             ),
         ]
         assert engine._load_document_table(table_name).columns.keys() == [
-            content_column if content_column else "page_content",
+            content_column,
             "fruit_name",
             "organic",
         ]
@@ -424,11 +422,9 @@ def test_delete_doc_with_default_metadata(engine):
     assert len(loader.load()) == 0
 
 
-@pytest.mark.parametrize("content_column", [None, "content_col_test"])
 @pytest.mark.parametrize("metadata_json_column", [None, "metadata_col_test"])
-def test_delete_doc_with_customized_metadata(
-    engine, content_column, metadata_json_column
-):
+def test_delete_doc_with_customized_metadata(engine, metadata_json_column):
+    content_column = "content_col_test"
     engine.init_document_table(
         table_name,
         metadata_columns=[
@@ -465,7 +461,10 @@ def test_delete_doc_with_customized_metadata(
         metadata_json_column=metadata_json_column,
     )
     loader = MySQLLoader(
-        engine=engine, table_name=table_name, metadata_json_column=metadata_json_column
+        engine=engine,
+        table_name=table_name,
+        content_columns=[content_column],
+        metadata_json_column=metadata_json_column,
     )
 
     saver.add_documents(test_docs)

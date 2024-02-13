@@ -233,7 +233,7 @@ class MySQLEngine:
         self,
         table_name: str,
         metadata_columns: List[sqlalchemy.Column] = [],
-        content_json_column: str = "page_content",
+        content_column: str = "page_content",
         metadata_json_column: Optional[str] = "langchain_metadata",
     ) -> None:
         """
@@ -250,7 +250,7 @@ class MySQLEngine:
         """
         columns = [
             sqlalchemy.Column(
-                content_json_column,
+                content_column,
                 sqlalchemy.UnicodeText,
                 primary_key=False,
                 nullable=False,
