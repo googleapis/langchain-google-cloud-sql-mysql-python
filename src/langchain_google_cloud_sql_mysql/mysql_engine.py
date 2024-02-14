@@ -202,6 +202,33 @@ class MySQLEngine:
         """
         return self.engine.connect()
 
+    def init_chat_history_table(self, table_name: str) -> None:
+        """Create table with schema required for MySQLChatMessageHistory class.
+
+        Required schema is as follows:
+
+            CREATE TABLE {table_name} (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                data JSON NOT NULL,
+                type TEXT NOT NULL
+            )
+
+        Args:
+            table_name (str): Name of database table to create for storing chat
+                message history.
+        """
+        create_table_query = f"""CREATE TABLE IF NOT EXISTS `{table_name}` (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          session_id TEXT NOT NULL,
+          data JSON NOT NULL,
+          type TEXT NOT NULL
+        );"""
+
+        with self.engine.connect() as conn:
+            conn.execute(sqlalchemy.text(create_table_query))
+            conn.commit()
+
     def init_document_table(
         self,
         table_name: str,
