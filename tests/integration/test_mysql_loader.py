@@ -249,7 +249,6 @@ def test_load_from_query_with_langchain_metadata(engine):
         query=query,
         metadata_columns=[
             "fruit_name",
-            "langchain_metadata",
         ],
     )
 

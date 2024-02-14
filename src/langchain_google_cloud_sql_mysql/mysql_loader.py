@@ -94,17 +94,15 @@ class MySQLLoader(BaseLoader):
              of the document. Optional.
           metadata_columns (List[str]): The columns to write into the `metadata` of the document.
              Optional.
-          metadata_json_column (str): The column storing metadata in JSON format.
-            Default: `langchain_metadata`. Optional.
+          metadata_json_column (str): The name of the JSON column to use as the metadata’s base
+            dictionary. Default: `langchain_metadata`. Optional.
         """
         self.engine = engine
         self.table_name = table_name
         self.query = query
         self.content_columns = content_columns
         self.metadata_columns = metadata_columns
-        self.metadata_json_column = (
-            metadata_json_column if metadata_json_column else DEFAULT_METADATA_COL
-        )
+        self.metadata_json_column = metadata_json_column
         if not self.table_name and not self.query:
             raise ValueError("One of 'table_name' or 'query' must be specified.")
         if self.table_name and self.query:
@@ -153,13 +151,27 @@ class MySQLLoader(BaseLoader):
             metadata_columns = self.metadata_columns or [
                 col for col in column_names if col not in content_columns
             ]
-            # check validity of column names
+            # check validity of metadata json column
+            if (
+                self.metadata_json_column
+                and self.metadata_json_column not in column_names
+            ):
+                raise ValueError(
+                    f"Column {self.metadata_json_column} not found in query result {column_names}."
+                )
+            # check validity of other column
             all_names = content_columns + metadata_columns
             for name in all_names:
                 if name not in column_names:
                     raise ValueError(
                         f"Column {name} not found in query result {column_names}."
                     )
+            # include metadata json column in the list of metadata columns
+            metadata_json_column = self.metadata_json_column or DEFAULT_METADATA_COL
+            if metadata_json_column not in metadata_columns:
+                metadata_columns.append(metadata_json_column)
+
+            # load document one by one
             while True:
                 row = result_proxy.fetchone()
                 if not row:
@@ -176,7 +188,7 @@ class MySQLLoader(BaseLoader):
                     content_columns,
                     metadata_columns,
                     row_data,
-                    self.metadata_json_column,
+                    metadata_json_column,
                 )
 
 
@@ -201,8 +213,8 @@ class MySQLDocumentSaver:
           table_name (str): The name of table for saving documents.
           content_column (str): The column to store document content.
             Deafult: `page_content`. Optional.
-          metadata_json_column (str): The column to store extra metadata in JSON format.
-            Default: `langchain_metadata`. Optional.
+          metadata_json_column (str): The name of the JSON column to use as the metadata’s base
+            dictionary. Default: `langchain_metadata`. Optional.
         """
         self.engine = engine
         self.table_name = table_name
@@ -220,7 +232,7 @@ class MySQLDocumentSaver:
             and metadata_json_column not in self._table.columns.keys()
         ):
             raise ValueError(
-                f"Missing '{DEFAULT_CONTENT_COL}' field in table {table_name}."
+                f"Cannot find '{metadata_json_column}' column in table {table_name}."
             )
         self.metadata_json_column = (
             metadata_json_column if metadata_json_column else DEFAULT_METADATA_COL
