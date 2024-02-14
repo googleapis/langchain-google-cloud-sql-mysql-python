@@ -38,7 +38,7 @@ def setup() -> Generator:
     query = """CREATE TABLE malformed_table (
         id INT AUTO_INCREMENT PRIMARY KEY,
         session_id TEXT NOT NULL,
-        data JSON NOT NULL,
+        data JSON NOT NULL
     );"""
     with engine.connect() as conn:
         conn.execute(sqlalchemy.text(query))
