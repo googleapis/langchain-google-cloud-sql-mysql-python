@@ -235,6 +235,7 @@ class MySQLEngine:
         metadata_columns: List[sqlalchemy.Column] = [],
         content_column: str = "page_content",
         metadata_json_column: Optional[str] = "langchain_metadata",
+        overwrite_existing: bool = False,
     ) -> None:
         """
         Create a table for saving of langchain documents.
@@ -245,9 +246,14 @@ class MySQLEngine:
                 to create for custom metadata. Optional.
             content_column (str): The column to store document content.
                 Deafult: `page_content`.
-            metadata_json_column (str): The column to store extra metadata in JSON format.
+            metadata_json_column (Optional[str]): The column to store extra metadata in JSON format.
                 Default: `langchain_metadata`. Optional.
+            overwrite_existing (bool): Whether to drop existing table. Default: False.
         """
+        if overwrite_existing:
+            with self.engine.connect() as conn:
+                conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`;"))
+
         columns = [
             sqlalchemy.Column(
                 content_column,

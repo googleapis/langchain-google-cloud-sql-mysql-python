@@ -314,6 +314,7 @@ def test_save_doc_with_customized_metadata(engine, metadata_json_column):
         ],
         content_column=content_column,
         metadata_json_column=metadata_json_column,
+        overwrite_existing=True,
     )
     test_docs = [
         Document(
@@ -442,6 +443,7 @@ def test_delete_doc_with_customized_metadata(engine, metadata_json_column):
         ],
         content_column=content_column,
         metadata_json_column=metadata_json_column,
+        overwrite_existing=True,
     )
     test_docs = [
         Document(
