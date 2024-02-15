@@ -93,8 +93,9 @@ def test_row2doc_metadata_col_nonexist():
         ["variety", "quantity_in_stock", "price_per_unit"],
         ["fruit-id"],
         row_customized_nested,
+        metadata_json_column="non-exist",
     )
-    assert doc == test_doc
+    assert doc == Document(page_content="Granny Smith 150 0.99")
 
 
 def test_doc2row_default():
