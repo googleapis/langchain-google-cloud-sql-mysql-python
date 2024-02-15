@@ -37,7 +37,7 @@ def _parse_doc_from_row(
     )
     metadata: Dict[str, Any] = {}
     # unnest metadata from langchain_metadata column
-    if metadata_json_column in metadata_columns and row.get(metadata_json_column):
+    if row.get(metadata_json_column):
         for k, v in row[metadata_json_column].items():
             metadata[k] = v
     # load metadata from other columns
@@ -166,10 +166,8 @@ class MySQLLoader(BaseLoader):
                     raise ValueError(
                         f"Column {name} not found in query result {column_names}."
                     )
-            # include metadata json column in the list of metadata columns
+            # use default metadata json column if not specified
             metadata_json_column = self.metadata_json_column or DEFAULT_METADATA_COL
-            if metadata_json_column not in metadata_columns:
-                metadata_columns.append(metadata_json_column)
 
             # load document one by one
             while True:
@@ -220,10 +218,10 @@ class MySQLDocumentSaver:
         self.table_name = table_name
         self._table = self.engine._load_document_table(table_name)
 
-        self.content_column = content_column if content_column else DEFAULT_CONTENT_COL
+        self.content_column = content_column or DEFAULT_CONTENT_COL
         if self.content_column not in self._table.columns.keys():
             raise ValueError(
-                f"Missing '{DEFAULT_CONTENT_COL}' field in table {table_name}."
+                f"Missing '{self.content_column}' field in table {table_name}."
             )
 
         # check metadata_json_column existence if it's provided.
@@ -234,9 +232,7 @@ class MySQLDocumentSaver:
             raise ValueError(
                 f"Cannot find '{metadata_json_column}' column in table {table_name}."
             )
-        self.metadata_json_column = (
-            metadata_json_column if metadata_json_column else DEFAULT_METADATA_COL
-        )
+        self.metadata_json_column = metadata_json_column or DEFAULT_METADATA_COL
 
     def add_documents(self, docs: List[Document]) -> None:
         """

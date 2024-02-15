@@ -335,8 +335,7 @@ def test_save_doc_with_customized_metadata(engine, metadata_json_column):
         metadata_columns=[
             "fruit_name",
             "organic",
-        ]
-        + ([metadata_json_column] if metadata_json_column else []),
+        ],
         metadata_json_column=metadata_json_column,
     )
 

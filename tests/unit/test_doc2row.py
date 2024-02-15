@@ -89,11 +89,12 @@ def test_row2doc_ovrride_default_metadata():
 
 
 def test_row2doc_metadata_col_nonexist():
-    assert _parse_doc_from_row(
+    doc = _parse_doc_from_row(
         ["variety", "quantity_in_stock", "price_per_unit"],
         ["fruit-id"],
         row_customized_nested,
-    ) == Document(page_content="Granny Smith 150 0.99")
+    )
+    assert doc == test_doc
 
 
 def test_doc2row_default():
