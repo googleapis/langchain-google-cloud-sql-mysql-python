@@ -35,7 +35,7 @@ source <your-env>/bin/activate
 
 ## Document Loader Usage
 
-Use a document loader to load data as LangChain `Document`s.
+Use a [document loader](https://python.langchain.com/docs/modules/data_connection/document_loaders/) to load data as LangChain `Document`s.
 
 ```python
 from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
