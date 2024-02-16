@@ -20,10 +20,12 @@ from langchain_google_cloud_sql_mysql.mysql_loader import (
     MySQLDocumentSaver,
     MySQLLoader,
 )
+from langchain_google_cloud_sql_mysql.version import __version__
 
 __all__ = [
     "MySQLChatMessageHistory",
     "MySQLDocumentSaver",
     "MySQLEngine",
     "MySQLLoader",
+    __version__,
 ]
