@@ -18,7 +18,7 @@ import sqlalchemy
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict
 
-from .mysql_engine import MySQLEngine
+from .engine import MySQLEngine
 
 
 class MySQLChatMessageHistory(BaseChatMessageHistory):

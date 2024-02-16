@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .mysql_chat_message_history import MySQLChatMessageHistory
-from .mysql_engine import MySQLEngine
-from .mysql_loader import MySQLDocumentSaver, MySQLLoader
+from .chat_message_history import MySQLChatMessageHistory
+from .engine import MySQLEngine
+from .loader import MySQLDocumentSaver, MySQLLoader
 from .version import __version__
 
 __all__ = [
