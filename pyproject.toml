@@ -1,6 +1,6 @@
 [project]
 name = "langchain-google-cloud-sql-mysql"
-version = "0.0.1"
+dynamic = ["version"]
 description = "LangChain integrations for Google Cloud SQL for MySQL"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -10,6 +10,9 @@ dependencies = [
     "SQLAlchemy==2.0.7",
     "cloud-sql-python-connector[pymysql]==1.5.0"
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "langchain_google_cloud_sql_mysql.version.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/googleapis/langchain-google-cloud-sql-mysql-python"
