@@ -13,7 +13,7 @@
 # limitations under the License.
 from langchain_core.documents import Document
 
-from langchain_google_cloud_sql_mysql.mysql_loader import (
+from langchain_google_cloud_sql_mysql.loader import (
     DEFAULT_CONTENT_COL,
     DEFAULT_METADATA_COL,
     _parse_doc_from_row,
