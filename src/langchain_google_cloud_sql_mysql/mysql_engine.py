@@ -23,9 +23,13 @@ import requests
 import sqlalchemy
 from google.cloud.sql.connector import Connector
 
+from .version import __version__
+
 if TYPE_CHECKING:
     import google.auth.credentials
     import pymysql
+
+USER_AGENT = "langchain-google-cloud-sql-mysql-python/" + __version__
 
 
 def _get_iam_principal_email(
@@ -174,7 +178,7 @@ class MySQLEngine:
             enable_iam_auth = True
 
         if cls._connector is None:
-            cls._connector = Connector()
+            cls._connector = Connector(user_agent=USER_AGENT)
 
         # anonymous function to be used for SQLAlchemy 'creator' argument
         def getconn() -> pymysql.Connection:

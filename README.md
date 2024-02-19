@@ -33,11 +33,23 @@ source <your-env>/bin/activate
 <your-env>/bin/pip install langchain-google-cloud-sql-mysql
 ```
 
-## Usage
+## Document Loader Usage
+
+Use a [document loader](https://python.langchain.com/docs/modules/data_connection/document_loaders/) to load data as LangChain `Document`s.
 
 ```python
-from langchain_google_cloud_sql_mysql import CloudSQLVectorstore, CloudSQLLoader, CloudSQLChatMessageHistory
+from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLLoader
+
+
+engine = MySQLEngine.from_instance("project-id", "region", "my-instance", "my-database")
+loader = MySQLLoader(
+    engine,
+    table_name="my-table-name"
+)
+docs = loader.lazy_load()
 ```
+
+See the full [Document Loader][loader] tutorial.
 
 ## Contributing
 
@@ -62,3 +74,4 @@ This is not an officially supported Google product.
 [api]: https://console.cloud.google.com/flows/enableapi?apiid=sqladmin.googleapis.com
 [auth]: https://googleapis.dev/python/google-api-core/latest/auth.html
 [venv]: https://virtualenv.pypa.io/en/latest/
+[loader]: ./docs/document_loader.ipynb
