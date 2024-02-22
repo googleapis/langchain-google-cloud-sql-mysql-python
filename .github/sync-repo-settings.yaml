@@ -28,8 +28,6 @@ branchProtectionRules:
       - "cla/google"
       - "lint"
       - "mysql-integration-test-pr (langchain-cloud-sql-testing)"
-      - "mssql-integration-test-pr (langchain-cloud-sql-testing)"
-      - "pg-integration-test-pr (langchain-cloud-sql-testing)"
       - "conventionalcommits.org"
       - "header-check"
     # - Add required status checks like presubmit tests
