@@ -1,6 +1,6 @@
 # Cloud SQL for MySQL for LangChain
 
-*Description*
+This package contains the [LangChain][langchain] integrations for Cloud SQL for MySQL.
 
 > **🧪 Preview:** This feature is covered by the Pre-GA Offerings Terms of the Google Cloud Terms of Service. Please note that pre-GA products and features might have limited support, and changes to pre-GA products and features might not be compatible with other pre-GA versions. For more information, see the [launch stage descriptions](https://cloud.google.com/products#product-launch-stages)
 
