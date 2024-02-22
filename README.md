@@ -59,7 +59,7 @@ Use [ChatMessageHistory](https://python.langchain.com/docs/modules/memory/chat_m
 from langchain_google_cloud_sql_mysql import MySQLChatMessageHistory, MySQLEngine
 
 
-engine = MySQLEngine.from_instance"project-id", ("region", "my-instance", "my-database")
+engine = MySQLEngine.from_instance("project-id", "region", "my-instance", "my-database")
 history = MySQLChatMessageHistory(
     engine,
     table_name="my-message-store",
