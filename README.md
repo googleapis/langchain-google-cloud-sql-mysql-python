@@ -94,3 +94,4 @@ This is not an officially supported Google product.
 [venv]: https://virtualenv.pypa.io/en/latest/
 [loader]: ./docs/document_loader.ipynb
 [history]: ./docs/chat_message_history.ipynb
+[langchain]: https://github.com/langchain-ai/langchain
