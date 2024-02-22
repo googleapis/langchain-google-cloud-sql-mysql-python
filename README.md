@@ -51,6 +51,24 @@ docs = loader.lazy_load()
 
 See the full [Document Loader][loader] tutorial.
 
+## Chat Message History Usage
+
+Use [ChatMessageHistory](https://python.langchain.com/docs/modules/memory/chat_messages/) to store messages and provide conversation history to LLMs.
+
+```python
+from langchain_google_cloud_sql_mysql import MySQLChatMessageHistory, MySQLEngine
+
+
+engine = MySQLEngine.from_instance"project-id", ("region", "my-instance", "my-database")
+history = MySQLChatMessageHistory(
+    engine,
+    table_name="my-message-store",
+    session_id="my-session_id"
+)
+```
+
+See the full [Chat Message History][history] tutorial.
+
 ## Contributing
 
 Contributions to this library are always welcome and highly encouraged.
@@ -75,3 +93,4 @@ This is not an officially supported Google product.
 [auth]: https://googleapis.dev/python/google-api-core/latest/auth.html
 [venv]: https://virtualenv.pypa.io/en/latest/
 [loader]: ./docs/document_loader.ipynb
+[history]: ./docs/chat_message_history.ipynb
