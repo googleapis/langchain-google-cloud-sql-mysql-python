@@ -53,7 +53,7 @@ See the full [Document Loader][loader] tutorial.
 
 ## Chat Message History Usage
 
-Use `ChatMessageHistory` to store messages and provide conversation history to LLMs.
+Use [ChatMessageHistory](https://python.langchain.com/docs/modules/memory/chat_messages/) to store messages and provide conversation history to LLMs.
 
 ```python
 from langchain_google_cloud_sql_mysql import MySQLChatMessageHistory, MySQLEngine
@@ -94,3 +94,4 @@ This is not an officially supported Google product.
 [venv]: https://virtualenv.pypa.io/en/latest/
 [loader]: ./docs/document_loader.ipynb
 [history]: ./docs/chat_message_history.ipynb
+[langchain]: https://github.com/langchain-ai/langchain
