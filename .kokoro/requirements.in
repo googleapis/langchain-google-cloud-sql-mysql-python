@@ -10,3 +10,4 @@ charset-normalizer<3
 click<8.1.0
 build
 tomli
+secretstorage
