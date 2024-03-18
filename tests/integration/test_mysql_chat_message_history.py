@@ -20,16 +20,14 @@ import sqlalchemy
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.human import HumanMessage
 
-from langchain_google_cloud_sql_mysql import (
-    MySQLChatMessageHistory,
-    MySQLEngine,
-)
+from langchain_google_cloud_sql_mysql import MySQLChatMessageHistory, MySQLEngine
 
 project_id = os.environ["PROJECT_ID"]
 region = os.environ["REGION"]
 instance_id = os.environ["INSTANCE_ID"]
 db_name = os.environ["DB_NAME"]
 table_name = "message_store" + str(uuid.uuid4())
+malformed_table = "malformed_table" + str(uuid.uuid4())
 
 
 @pytest.fixture(name="memory_engine")
@@ -42,7 +40,6 @@ def setup() -> Generator:
     )
 
     # create table with malformed schema (missing 'type')
-    malformed_table = "malformed_table" + str(uuid.uuid4())
     query = """CREATE TABLE {malformed_table} (
         id INT AUTO_INCREMENT PRIMARY KEY,
         session_id TEXT NOT NULL,
@@ -102,5 +99,5 @@ def test_chat_message_history_table_malformed_schema(
         MySQLChatMessageHistory(
             engine=memory_engine,
             session_id="test",
-            table_name="malformed_table",
+            table_name=malformed_table,
         )
