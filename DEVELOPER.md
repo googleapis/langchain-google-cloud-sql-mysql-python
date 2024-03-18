@@ -41,7 +41,7 @@ name: mysql-integration-test-pr-py38
 description: Run integration tests on PR for Python 3.8
 filename: integration.cloudbuild.yaml
 github:
-  name: langchain-google-alloydb-mysql-python
+  name: langchain-google-cloud-sql-mysql-python
   owner: googleapis
   pullRequest:
     branch: .*
@@ -52,9 +52,8 @@ ignoredFiles:
   - .github/**
   - "*.md"
 substitutions:
-  _CLUSTER_ID: <ADD_VALUE>
-  _DATABASE_ID: <ADD_VALUE>
   _INSTANCE_ID: <ADD_VALUE>
+  _DB_NAME: <ADD_VALUE>
   _REGION: us-central1
   _VERSION: "3.8"
 ```
