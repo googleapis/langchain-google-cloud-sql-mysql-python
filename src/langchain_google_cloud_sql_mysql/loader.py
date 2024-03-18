@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from collections.abc import Iterable
-from typing import Any, Dict, Iterator, List, Optional, Sequence, cast
+from typing import Any, Dict, Iterable, Iterator, List, Optional, cast
 
 import pymysql
 import sqlalchemy

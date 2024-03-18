@@ -40,7 +40,7 @@ def setup() -> Generator:
     )
 
     # create table with malformed schema (missing 'type')
-    query = """CREATE TABLE `{malformed_table}` (
+    query = f"""CREATE TABLE `{malformed_table}` (
         id INT AUTO_INCREMENT PRIMARY KEY,
         session_id TEXT NOT NULL,
         data JSON NOT NULL
