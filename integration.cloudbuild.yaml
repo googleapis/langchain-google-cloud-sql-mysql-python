@@ -14,35 +14,39 @@
 
 steps:
   - id: Install dependencies
-    name: python:3.11
+    name: python:${_VERSION}
     entrypoint: pip
     args: ["install", "--user", "-r", "requirements.txt"]
 
   - id: Install module (and test requirements)
-    name: python:3.11
+    name: python:${_VERSION}
     entrypoint: pip
     args: ["install", ".[test]", "--user"]
 
   - id: Run integration tests
-    name: python:3.11
+    name: python:${_VERSION}
     entrypoint: python
     args: ["-m", "pytest"]
     env:
-      - 'PROJECT_ID=$PROJECT_ID'
-      - 'INSTANCE_ID=$_INSTANCE_ID'
-      - 'DB_NAME=$_DB_NAME'
-      - 'TABLE_NAME=test-$BUILD_ID'
-      - 'REGION=$_REGION'
-    secretEnv: ['DB_USER', 'DB_PASSWORD']
+      - "PROJECT_ID=$PROJECT_ID"
+      - "INSTANCE_ID=$_INSTANCE_ID"
+      - "DB_NAME=$_DB_NAME"
+      - "TABLE_NAME=test-$BUILD_ID"
+      - "REGION=$_REGION"
+    secretEnv: ["DB_USER", "DB_PASSWORD"]
 
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_ID/secrets/langchain-test-mysql-username/versions/1
-    env: 'DB_USER'
-  - versionName: projects/$PROJECT_ID/secrets/langchain-test-mysql-password/versions/1
-    env: 'DB_PASSWORD'
+    - versionName: projects/$PROJECT_ID/secrets/langchain-test-mysql-username/versions/1
+      env: "DB_USER"
+    - versionName: projects/$PROJECT_ID/secrets/langchain-test-mysql-password/versions/1
+      env: "DB_PASSWORD"
 
 substitutions:
   _INSTANCE_ID: test-instance
   _REGION: us-central1
   _DB_NAME: test
+  _VERSION: "3.8"
+
+options:
+  dynamicSubstitutions: true
