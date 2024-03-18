@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import uuid
 from typing import Generator
 
 import pytest
@@ -25,17 +26,21 @@ project_id = os.environ["PROJECT_ID"]
 region = os.environ["REGION"]
 instance_id = os.environ["INSTANCE_ID"]
 db_name = os.environ["DB_NAME"]
-table_name = "message_store"
+table_name = "message_store" + str(uuid.uuid4())
+malformed_table = "malformed_table" + str(uuid.uuid4())
 
 
 @pytest.fixture(name="memory_engine")
 def setup() -> Generator:
     engine = MySQLEngine.from_instance(
-        project_id=project_id, region=region, instance=instance_id, database=db_name
+        project_id=project_id,
+        region=region,
+        instance=instance_id,
+        database=db_name,
     )
 
     # create table with malformed schema (missing 'type')
-    query = """CREATE TABLE malformed_table (
+    query = f"""CREATE TABLE `{malformed_table}` (
         id INT AUTO_INCREMENT PRIMARY KEY,
         session_id TEXT NOT NULL,
         data JSON NOT NULL
@@ -47,7 +52,7 @@ def setup() -> Generator:
     # use default table for MySQLChatMessageHistory
     with engine.connect() as conn:
         conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
-        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS malformed_table"))
+        conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{malformed_table}`"))
         conn.commit()
 
 
@@ -71,7 +76,9 @@ def test_chat_message_history(memory_engine: MySQLEngine) -> None:
     assert len(history.messages) == 0
 
 
-def test_chat_message_history_table_does_not_exist(memory_engine: MySQLEngine) -> None:
+def test_chat_message_history_table_does_not_exist(
+    memory_engine: MySQLEngine,
+) -> None:
     """Test that MySQLChatMessageHistory fails if table does not exist."""
     with pytest.raises(AttributeError) as exc_info:
         MySQLChatMessageHistory(
@@ -90,5 +97,7 @@ def test_chat_message_history_table_malformed_schema(
     """Test that MySQLChatMessageHistory fails if schema is malformed."""
     with pytest.raises(IndexError):
         MySQLChatMessageHistory(
-            engine=memory_engine, session_id="test", table_name="malformed_table"
+            engine=memory_engine,
+            session_id="test",
+            table_name=malformed_table,
         )
