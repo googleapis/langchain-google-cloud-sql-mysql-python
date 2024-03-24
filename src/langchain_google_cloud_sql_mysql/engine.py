@@ -31,6 +31,20 @@ if TYPE_CHECKING:
 
 USER_AGENT = "langchain-google-cloud-sql-mysql-python/" + __version__
 
+from dataclasses import dataclass
+
+@dataclass
+class Column:
+    name: str
+    data_type: str
+    nullable: bool = True
+
+    def __post_init__(self):
+        if not isinstance(self.name, str):
+            raise ValueError("Column name must be type string")
+        if not isinstance(self.data_type, str):
+            raise ValueError("Column data_type must be type string")
+
 
 def _get_iam_principal_email(
     credentials: google.auth.credentials.Credentials,
@@ -293,3 +307,32 @@ class MySQLEngine:
         metadata = sqlalchemy.MetaData()
         sqlalchemy.MetaData.reflect(metadata, bind=self.engine, only=[table_name])
         return metadata.tables[table_name]
+    
+
+    def init_vectorstore_table(
+        self,
+        table_name: str,
+        vector_size: int,
+        content_column: str = "content",
+        embedding_column: str = "embedding",
+        metadata_columns: List[Column] = [],
+        metadata_json_column: str = "langchain_metadata",
+        id_column: str = "langchain_id",
+        overwrite_existing: bool = False,
+        store_metadata: bool = True,
+    ) -> None:
+        query = f"""CREATE TABLE `{table_name}`(
+            '{id_column}' BINARY(16) PRIMARY KEY,
+            '{content_column}' TEXT NOT NULL,
+            '{embedding_column}' vector({vector_size}) USING VARBINARY NOT NULL"""
+        for column in metadata_columns:
+            nullable = "NOT NULL" if not column.nullable else ""
+            query += f',\n"{column.name}" {column.data_type} {nullable}'
+        if store_metadata:
+            query += f""",\n"{metadata_json_column}" JSON"""
+        query += "\n);"
+
+        with self.engine.connect() as conn:
+            if overwrite_existing:
+                conn.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS `{table_name}`"))
+            conn.execute(sqlalchemy.text(query))
