@@ -33,6 +33,7 @@ USER_AGENT = "langchain-google-cloud-sql-mysql-python/" + __version__
 
 from dataclasses import dataclass
 
+
 @dataclass
 class Column:
     name: str
@@ -220,6 +221,20 @@ class MySQLEngine:
         """
         return self.engine.connect()
 
+    def _execute(self, query: str, params: Optional[dict] = None) -> None:
+        """Execute a SQL query."""
+        with self.engine.connect() as conn:
+            conn.execute(sqlalchemy.text(query), params)
+            conn.commit()
+
+    def _fetch(self, query: str, params: Optional[dict] = None):
+        """Fetch results from a SQL query."""
+        with self.engine.connect() as conn:
+            result = conn.execute(sqlalchemy.text(query), params)
+            result_map = result.mappings()
+            result_fetch = result_map.fetchall()
+            return result_fetch
+
     def init_chat_history_table(self, table_name: str) -> None:
         """Create table with schema required for MySQLChatMessageHistory class.
 
@@ -307,7 +322,6 @@ class MySQLEngine:
         metadata = sqlalchemy.MetaData()
         sqlalchemy.MetaData.reflect(metadata, bind=self.engine, only=[table_name])
         return metadata.tables[table_name]
-    
 
     def init_vectorstore_table(
         self,
@@ -321,15 +335,33 @@ class MySQLEngine:
         overwrite_existing: bool = False,
         store_metadata: bool = True,
     ) -> None:
+        """
+        Create a table for saving of vectors to be used with MySQLVectorStore.
+
+        Args:
+            table_name (str): The MySQL database table name.
+            vector_size (int): Vector size for the embedding model to be used.
+            content_column (str): Name of the column to store document content.
+                Deafult: `page_content`.
+            embedding_column (str) : Name of the column to store vector embeddings.
+                Default: `embedding`.
+            metadata_columns (List[Column]): A list of Columns to create for custom
+                metadata. Default: []. Optional.
+            metadata_json_column (str): The column to store extra metadata in JSON format.
+                Default: `langchain_metadata`. Optional.
+            id_column (str):  Name of the column to store ids.
+                Default: `langchain_id`. Optional,
+            overwrite_existing (bool): Whether to drop existing table. Default: False.
+        """
         query = f"""CREATE TABLE `{table_name}`(
-            '{id_column}' BINARY(16) PRIMARY KEY,
-            '{content_column}' TEXT NOT NULL,
-            '{embedding_column}' vector({vector_size}) USING VARBINARY NOT NULL"""
+            `{id_column}` CHAR(36) PRIMARY KEY,
+            `{content_column}` TEXT NOT NULL,
+            `{embedding_column}` vector({vector_size}) USING VARBINARY NOT NULL"""
         for column in metadata_columns:
             nullable = "NOT NULL" if not column.nullable else ""
-            query += f',\n"{column.name}" {column.data_type} {nullable}'
+            query += f",\n`{column.name}` {column.data_type} {nullable}"
         if store_metadata:
-            query += f""",\n"{metadata_json_column}" JSON"""
+            query += f""",\n`{metadata_json_column}` JSON"""
         query += "\n);"
 
         with self.engine.connect() as conn:

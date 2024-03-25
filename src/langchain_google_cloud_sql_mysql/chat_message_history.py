@@ -25,7 +25,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
     """Chat message history stored in a Cloud SQL MySQL database.
 
     Args:
-        engine (MySQLEngine): SQLAlchemy connection pool engine for managing
+        engine (MySQLEngine): Connection pool engine for managing
             connections to Cloud SQL for MySQL.
         session_id (str): Arbitrary key that is used to store the messages
             of a single chat session.

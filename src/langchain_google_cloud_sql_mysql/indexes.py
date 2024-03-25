@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .chat_message_history import MySQLChatMessageHistory
-from .engine import MySQLEngine
-from .loader import MySQLDocumentSaver, MySQLLoader
-from .vectorstore import MySQLVectorStore
-from .version import __version__
+from abc import ABC
+from dataclasses import dataclass
 
-__all__ = [
-    "MySQLChatMessageHistory",
-    "MySQLDocumentSaver",
-    "MySQLEngine",
-    "MySQLLoader",
-    "MySQLVectorStore",
-    "__version__",
-]
+
+@dataclass
+class QueryOptions(ABC):
+    def to_string(self) -> str:
+        raise NotImplementedError("to_string method must be implemented by subclass")
