@@ -107,7 +107,7 @@ class TestVectorStore:
             metadata_json_column="mymeta",
         )
         yield vs
-        engine._execute(f'DROP TABLE IF EXISTS `{CUSTOM_TABLE}`')
+        engine._execute(f"DROP TABLE IF EXISTS `{CUSTOM_TABLE}`")
 
     def test_post_init(self, engine):
         with pytest.raises(ValueError):
@@ -152,7 +152,7 @@ class TestVectorStore:
     def test_add_texts_custom(self, engine, vs_custom):
         ids = [str(uuid.uuid4()) for i in range(len(texts))]
         vs_custom.add_texts(texts, ids=ids)
-        results = engine._fetch(f'SELECT * FROM `{CUSTOM_TABLE}`')
+        results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
         assert len(results) == 3
         assert results[0]["mycontent"] == "foo"
         assert results[0]["myembedding"]
@@ -161,15 +161,15 @@ class TestVectorStore:
 
         ids = [str(uuid.uuid4()) for i in range(len(texts))]
         vs_custom.add_texts(texts, metadatas, ids)
-        results = engine._fetch(f'SELECT * FROM `{CUSTOM_TABLE}`')
+        results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
         assert len(results) == 6
-        engine._execute(f'TRUNCATE TABLE `{CUSTOM_TABLE}`')
+        engine._execute(f"TRUNCATE TABLE `{CUSTOM_TABLE}`")
 
     def test_add_embedding_custom(self, engine, vs_custom):
         ids = [str(uuid.uuid4()) for i in range(len(texts))]
         vs_custom._add_embeddings(texts, embeddings, metadatas, ids)
-        results = engine._fetch(f'SELECT * FROM `{CUSTOM_TABLE}`')
+        results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
         assert len(results) == 3
-        engine._execute(f'TRUNCATE TABLE `{CUSTOM_TABLE}`')
+        engine._execute(f"TRUNCATE TABLE `{CUSTOM_TABLE}`")
 
     # Need tests for store metadata=False
