@@ -60,7 +60,7 @@ class TestVectorStore:
 
     @pytest.fixture(scope="module")
     def db_name(self) -> str:
-        return get_env_var("DATABASE_ID", "database for cloud sql")
+        return get_env_var("DATABASE_ID", "database name on cloud sql instance")
 
     @pytest.fixture(scope="class")
     def engine(self, db_project, db_region, db_instance, db_name):

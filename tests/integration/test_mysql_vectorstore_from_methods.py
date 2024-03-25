@@ -61,7 +61,7 @@ class TestVectorStoreFromMethods:
 
     @pytest.fixture(scope="module")
     def db_name(self) -> str:
-        return get_env_var("DATABASE_ID", "instance for cloud sql")
+        return get_env_var("DATABASE_ID", "database name on cloud sql instance")
 
     @pytest.fixture
     async def engine(self, db_project, db_region, db_instance, db_name):
