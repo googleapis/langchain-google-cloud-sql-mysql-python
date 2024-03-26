@@ -352,6 +352,8 @@ class MySQLEngine:
             id_column (str):  Name of the column to store ids.
                 Default: `langchain_id`. Optional,
             overwrite_existing (bool): Whether to drop existing table. Default: False.
+            store_metadata (bool): Whether to store metadata in the table.
+                Default: True.
         """
         query = f"""CREATE TABLE `{table_name}`(
             `{id_column}` CHAR(36) PRIMARY KEY,
