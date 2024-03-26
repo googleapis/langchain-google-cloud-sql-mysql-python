@@ -13,12 +13,13 @@
 # limitations under the License.
 
 from .chat_message_history import MySQLChatMessageHistory
-from .engine import MySQLEngine
+from .engine import Column, MySQLEngine
 from .loader import MySQLDocumentSaver, MySQLLoader
 from .vectorstore import MySQLVectorStore
 from .version import __version__
 
 __all__ = [
+    "Column",
     "MySQLChatMessageHistory",
     "MySQLDocumentSaver",
     "MySQLEngine",

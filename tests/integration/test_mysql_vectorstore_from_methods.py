@@ -16,7 +16,6 @@ import os
 import uuid
 
 import pytest
-import pytest_asyncio
 from langchain_community.embeddings import DeterministicFakeEmbedding
 from langchain_core.documents import Document
 
@@ -45,7 +44,6 @@ def get_env_var(key: str, desc: str) -> str:
     return v
 
 
-@pytest.mark.asyncio
 class TestVectorStoreFromMethods:
     @pytest.fixture(scope="module")
     def db_project(self) -> str:
@@ -61,10 +59,10 @@ class TestVectorStoreFromMethods:
 
     @pytest.fixture(scope="module")
     def db_name(self) -> str:
-        return get_env_var("DATABASE_ID", "database name on cloud sql instance")
+        return get_env_var("DB_NAME", "database name on cloud sql instance")
 
     @pytest.fixture
-    async def engine(self, db_project, db_region, db_instance, db_name):
+    def engine(self, db_project, db_region, db_instance, db_name):
         engine = MySQLEngine.from_instance(
             project_id=db_project,
             instance=db_instance,
@@ -126,8 +124,11 @@ class TestVectorStoreFromMethods:
             metadata_columns=["page", "source"],
         )
         results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
+        content = [result["mycontent"] for result in results]
         assert len(results) == 3
-        assert results[0]["mycontent"] == "foo"
+        assert "foo" in content
+        assert "bar" in content
+        assert "baz" in content
         assert results[0]["myembedding"]
         assert results[0]["page"] is None
         assert results[0]["source"] is None
@@ -154,8 +155,11 @@ class TestVectorStoreFromMethods:
         )
 
         results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
+        content = [result["mycontent"] for result in results]
         assert len(results) == 3
-        assert results[0]["mycontent"] == "foo"
+        assert "foo" in content
+        assert "bar" in content
+        assert "baz" in content
         assert results[0]["myembedding"]
         assert results[0]["page"] == "0"
         assert results[0]["source"] == "google.com"

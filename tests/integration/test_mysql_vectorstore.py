@@ -16,7 +16,6 @@ import os
 import uuid
 
 import pytest
-import pytest_asyncio
 from langchain_community.embeddings import DeterministicFakeEmbedding
 from langchain_core.documents import Document
 
@@ -44,7 +43,6 @@ def get_env_var(key: str, desc: str) -> str:
     return v
 
 
-@pytest.mark.asyncio(scope="class")
 class TestVectorStore:
     @pytest.fixture(scope="module")
     def db_project(self) -> str:
@@ -60,7 +58,7 @@ class TestVectorStore:
 
     @pytest.fixture(scope="module")
     def db_name(self) -> str:
-        return get_env_var("DATABASE_ID", "database name on cloud sql instance")
+        return get_env_var("DB_NAME", "database name on cloud sql instance")
 
     @pytest.fixture(scope="class")
     def engine(self, db_project, db_region, db_instance, db_name):
@@ -123,12 +121,12 @@ class TestVectorStore:
             )
 
     def test_add_texts(self, engine, vs):
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs.add_texts(texts, ids=ids)
         results = engine._fetch(f"SELECT * FROM `{DEFAULT_TABLE}`")
         assert len(results) == 3
 
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs.add_texts(texts, metadatas, ids)
         results = engine._fetch(f"SELECT * FROM `{DEFAULT_TABLE}`")
         assert len(results) == 6
@@ -136,37 +134,40 @@ class TestVectorStore:
 
     def test_add_texts_edge_cases(self, engine, vs):
         texts = ["Taylor's", '"Swift"', "best-friend"]
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs.add_texts(texts, ids=ids)
         results = engine._fetch(f"SELECT * FROM `{DEFAULT_TABLE}`")
         assert len(results) == 3
         engine._execute(f"TRUNCATE TABLE `{DEFAULT_TABLE}`")
 
     def test_add_embedding(self, engine, vs):
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs._add_embeddings(texts, embeddings, metadatas, ids)
         results = engine._fetch(f"SELECT * FROM `{DEFAULT_TABLE}`")
         assert len(results) == 3
         engine._execute(f"TRUNCATE TABLE `{DEFAULT_TABLE}`")
 
     def test_add_texts_custom(self, engine, vs_custom):
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs_custom.add_texts(texts, ids=ids)
         results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
+        content = [result["mycontent"] for result in results]
         assert len(results) == 3
-        assert results[0]["mycontent"] == "foo"
+        assert "foo" in content
+        assert "bar" in content
+        assert "baz" in content
         assert results[0]["myembedding"]
         assert results[0]["page"] is None
         assert results[0]["source"] is None
 
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs_custom.add_texts(texts, metadatas, ids)
         results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
         assert len(results) == 6
         engine._execute(f"TRUNCATE TABLE `{CUSTOM_TABLE}`")
 
     def test_add_embedding_custom(self, engine, vs_custom):
-        ids = [str(uuid.uuid4()) for i in range(len(texts))]
+        ids = [str(uuid.uuid4()) for _ in range(len(texts))]
         vs_custom._add_embeddings(texts, embeddings, metadatas, ids)
         results = engine._fetch(f"SELECT * FROM `{CUSTOM_TABLE}`")
         assert len(results) == 3
