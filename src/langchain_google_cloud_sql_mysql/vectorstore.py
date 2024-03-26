@@ -38,7 +38,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
-        index_query_options: Optional[QueryOptions] = None,
+        query_options: Optional[QueryOptions] = None,
     ):
         """Constructor for MySQLVectorStore.
         Args:
@@ -117,7 +117,7 @@ class MySQLVectorStore(VectorStore):
         self.metadata_columns = metadata_columns
         self.id_column = id_column
         self.metadata_json_column = metadata_json_column
-        self.index_query_options = index_query_options
+        self.query_options = query_options
 
     @property
     def embeddings(self) -> Embeddings:

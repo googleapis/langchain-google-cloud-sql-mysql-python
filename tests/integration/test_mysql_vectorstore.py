@@ -71,9 +71,13 @@ class TestVectorStore:
 
         yield engine
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="function")
     def vs(self, engine):
-        engine.init_vectorstore_table(DEFAULT_TABLE, VECTOR_SIZE)
+        engine.init_vectorstore_table(
+            DEFAULT_TABLE,
+            VECTOR_SIZE,
+            overwrite_existing=True,
+        )
 
         vs = MySQLVectorStore(
             engine,
@@ -83,7 +87,7 @@ class TestVectorStore:
         yield vs
         engine._execute(f"DROP TABLE IF EXISTS `{DEFAULT_TABLE}`")
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="function")
     def vs_custom(self, engine):
         engine.init_vectorstore_table(
             CUSTOM_TABLE,
@@ -93,7 +97,9 @@ class TestVectorStore:
             embedding_column="myembedding",
             metadata_columns=[Column("page", "TEXT"), Column("source", "TEXT")],
             metadata_json_column="mymeta",
+            overwrite_existing=True,
         )
+
         vs = MySQLVectorStore(
             engine,
             embedding_service=embeddings_service,

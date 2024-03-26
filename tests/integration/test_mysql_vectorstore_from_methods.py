@@ -161,6 +161,9 @@ class TestVectorStoreFromMethods:
         assert "bar" in content
         assert "baz" in content
         assert results[0]["myembedding"]
-        assert results[0]["page"] == "0"
+        pages = [result["page"] for result in results]
+        assert "0" in pages
+        assert "1" in pages
+        assert "2" in pages
         assert results[0]["source"] == "google.com"
         engine._execute(f"TRUNCATE TABLE `{CUSTOM_TABLE}`")
