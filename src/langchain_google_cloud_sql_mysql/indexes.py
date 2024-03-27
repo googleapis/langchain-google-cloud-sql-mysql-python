@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+
 class SearchType(Enum):
     """Defines the types of search algorithms that can be used.
 
@@ -23,8 +24,10 @@ class SearchType(Enum):
         KNN: K-Nearest Neighbors search.
         ANN: Approximate Nearest Neighbors search.
     """
+
     KNN = "KNN"
     ANN = "ANN"
+
 
 @dataclass
 class QueryOptions:
@@ -50,7 +53,9 @@ class QueryOptions:
             }
         )
 
+
 DEFAULT_QUERY_OPTIONS = QueryOptions()
+
 
 class IndexType(Enum):
     """Defines the types of indexes that can be used for vector storage.
@@ -60,9 +65,11 @@ class IndexType(Enum):
         TREE_AH: A tree-based index, specifically Annoy (Approximate Nearest Neighbors Oh Yeah).
         TREE_SQ: A tree-based index, specifically ScaNN (Scalable Nearest Neighbors).
     """
+
     BRUTE_FORCE_SCAN = "BRUTE_FORCE"
     TREE_AH = "TREE_AH"
     TREE_SQ = "TREE_SQ"
+
 
 class DistanceMeasure(Enum):
     """Enumerates the types of distance measures that can be used in searches.
@@ -72,9 +79,11 @@ class DistanceMeasure(Enum):
         SQUARED_L2: Squared L2 norm (Euclidean) distance.
         DOT_PRODUCT: Dot product similarity.
     """
+
     COSINE = "cosine"
     SQUARED_L2 = "squared_l2"
     DOT_PRODUCT = "dot_product"
+
 
 class VectorIndex:
     """Represents a vector index for storing and querying vectors.
