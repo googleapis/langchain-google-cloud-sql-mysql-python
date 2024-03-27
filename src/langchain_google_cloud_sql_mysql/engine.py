@@ -224,8 +224,8 @@ class MySQLEngine:
     def _execute(self, query: str, params: Optional[dict] = None) -> None:
         """Execute a SQL query."""
         with self.engine.connect() as conn:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             conn.execute(sqlalchemy.text(query), params)
-            conn.commit()
 
     def _fetch(self, query: str, params: Optional[dict] = None):
         """Fetch results from a SQL query."""

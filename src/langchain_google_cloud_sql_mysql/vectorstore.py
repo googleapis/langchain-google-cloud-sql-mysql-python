@@ -23,7 +23,9 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from .engine import MySQLEngine
-from .indexes import QueryOptions
+from .indexes import DEFAULT_QUERY_OPTIONS, QueryOptions, SearchType, VectorIndex
+
+DEFAULT_INDEX_NAME_SUFFIX = "langchainvectorindex"
 
 
 class MySQLVectorStore(VectorStore):
@@ -38,7 +40,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
-        query_options: Optional[QueryOptions] = None,
+        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
     ):
         """Constructor for MySQLVectorStore.
         Args:
@@ -118,10 +120,15 @@ class MySQLVectorStore(VectorStore):
         self.id_column = id_column
         self.metadata_json_column = metadata_json_column
         self.query_options = query_options
+        self.db_name = self.__get_db_name()
 
     @property
     def embeddings(self) -> Embeddings:
         return self.embedding_service
+
+    def __get_db_name(self) -> str:
+        result = self.engine._fetch("SELECT DATABASE();")
+        return result[0]["DATABASE()"]
 
     def _add_embeddings(
         self,
@@ -210,6 +217,60 @@ class MySQLVectorStore(VectorStore):
         self.engine._execute(query)
         return True
 
+    def apply_vector_index(self, vector_index: VectorIndex):
+        # Construct the default index name
+        if not vector_index.name:
+            vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
+        self.__exec_apply_vector_index(vector_index)
+        # After applying an index to the table, set the query option search type to be ANN
+        self.query_options.search_type = SearchType.ANN
+
+    def __exec_apply_vector_index(self, vector_index: VectorIndex):
+        existing_index_name = self._get_vector_index_name()
+        if (
+            existing_index_name
+            and existing_index_name == f"{self.db_name}.{vector_index.name}"
+        ):
+            base_query_template = (
+                f"CALL mysql.alter_vector_index('{existing_index_name}', '{{}}');"
+            )
+        else:
+            self.drop_vector_index()
+            base_query_template = f"CALL mysql.create_vector_index('{vector_index.name}', '{self.db_name}.{self.table_name}', '{self.embedding_column}', '{{}}');"
+
+        index_options = []
+        if vector_index.index_type:
+            index_options.append(f"index_type={vector_index.index_type.value}")
+        if vector_index.distance_measure:
+            index_options.append(
+                f"distance_measure={vector_index.distance_measure.value}"
+            )
+        if vector_index.num_partitions:
+            index_options.append(f"num_partitions={vector_index.num_partitions}")
+        if vector_index.num_neighbors:
+            index_options.append(f"num_neighbors={vector_index.num_neighbors}")
+        index_options_query = ",".join(index_options)
+
+        stmt = base_query_template.format(index_options_query)
+        self.engine._execute(stmt)
+
+    def _get_vector_index_name(self):
+        query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
+        result = self.engine._fetch(query)
+        if result:
+            return result[0]["index_name"]
+        else:
+            return None
+
+    def drop_vector_index(self):
+        existing_index_name = self._get_vector_index_name()
+        if existing_index_name:
+            self.engine._execute(
+                f"CALL mysql.drop_vector_index('{existing_index_name}');"
+            )
+        self.query_options.search_type = SearchType.KNN
+        return existing_index_name
+
     @classmethod
     def from_texts(  # type: ignore[override]
         cls: Type[MySQLVectorStore],
@@ -225,6 +286,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
+        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
         **kwargs: Any,
     ):
         vs = cls(
@@ -237,6 +299,7 @@ class MySQLVectorStore(VectorStore):
             ignore_metadata_columns=ignore_metadata_columns,
             id_column=id_column,
             metadata_json_column=metadata_json_column,
+            query_options=query_options,
         )
         vs.add_texts(texts, metadatas=metadatas, ids=ids, **kwargs)
         return vs
@@ -255,6 +318,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
+        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
         **kwargs: Any,
     ) -> MySQLVectorStore:
         vs = cls(
@@ -267,6 +331,7 @@ class MySQLVectorStore(VectorStore):
             ignore_metadata_columns=ignore_metadata_columns,
             id_column=id_column,
             metadata_json_column=metadata_json_column,
+            query_options=query_options,
         )
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
