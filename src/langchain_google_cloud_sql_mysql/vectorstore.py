@@ -199,7 +199,7 @@ class MySQLVectorStore(VectorStore):
         self,
         ids: Optional[List[str]] = None,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool:
         if not ids:
             return False
 
