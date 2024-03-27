@@ -43,7 +43,7 @@ availableSecrets:
       env: "DB_PASSWORD"
 
 substitutions:
-  _INSTANCE_ID: mysql-vector
+  _INSTANCE_ID: test-instance
   _REGION: us-central1
   _DB_NAME: test
   _VERSION: "3.8"
