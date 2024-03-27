@@ -342,7 +342,7 @@ class MySQLEngine:
             table_name (str): The MySQL database table name.
             vector_size (int): Vector size for the embedding model to be used.
             content_column (str): Name of the column to store document content.
-                Deafult: `page_content`.
+                Default: `page_content`.
             embedding_column (str) : Name of the column to store vector embeddings.
                 Default: `embedding`.
             metadata_columns (List[Column]): A list of Columns to create for custom

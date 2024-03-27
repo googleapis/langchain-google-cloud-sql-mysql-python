@@ -184,6 +184,32 @@ class MySQLVectorStore(VectorStore):
         )
         return ids
 
+    def add_documents(
+        self,
+        documents: List[Document],
+        ids: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> List[str]:
+        texts = [doc.page_content for doc in documents]
+        metadatas = [doc.metadata for doc in documents]
+        ids = self.add_texts(texts, metadatas=metadatas, ids=ids, **kwargs)
+        return ids
+
+    def delete(
+        self,
+        ids: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        if not ids:
+            return False
+
+        id_list = ", ".join([f"'{id}'" for id in ids])
+        query = (
+            f"DELETE FROM `{self.table_name}` WHERE `{self.id_column}` in ({id_list})"
+        )
+        self.engine._execute(query)
+        return True
+
     @classmethod
     def from_texts(  # type: ignore[override]
         cls: Type[MySQLVectorStore],
