@@ -21,6 +21,8 @@ from .version import __version__
 
 __all__ = [
     "Column",
+    "DistanceMeasure",
+    "IndexType",
     "MySQLChatMessageHistory",
     "MySQLDocumentSaver",
     "MySQLEngine",
@@ -28,8 +30,6 @@ __all__ = [
     "MySQLVectorStore",
     "QueryOptions",
     "SearchType",
-    "IndexType",
-    "DistanceMeasure",
     "VectorIndex",
     "__version__",
 ]

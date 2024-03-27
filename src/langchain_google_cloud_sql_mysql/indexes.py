@@ -45,9 +45,6 @@ class QueryOptions:
 DEFAULT_QUERY_OPTIONS = QueryOptions()
 
 
-from enum import Enum
-
-
 class IndexType(Enum):
     """Enum for index types."""
 
@@ -69,11 +66,11 @@ class VectorIndex:
 
     def __init__(
         self,
-        name: str = None,
-        index_type: IndexType = None,
-        distance_measure: DistanceMeasure = None,
-        num_partitions: int = None,
-        num_neighbors: int = None,
+        name: Optional[str] = None,
+        index_type: Optional[IndexType] = None,
+        distance_measure: Optional[DistanceMeasure] = None,
+        num_partitions: Optional[int] = None,
+        num_neighbors: Optional[int] = None,
     ):
         self.name = name
         self.index_type = index_type

@@ -40,7 +40,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
-        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
+        query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
     ):
         """Constructor for MySQLVectorStore.
         Args:
@@ -286,7 +286,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
-        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
+        query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
         **kwargs: Any,
     ):
         vs = cls(
@@ -318,7 +318,7 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
-        query_options: Optional[QueryOptions] = DEFAULT_QUERY_OPTIONS,
+        query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
         **kwargs: Any,
     ) -> MySQLVectorStore:
         vs = cls(
