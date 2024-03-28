@@ -221,23 +221,27 @@ class MySQLVectorStore(VectorStore):
         # Construct the default index name
         if not vector_index.name:
             vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
-        self.__exec_apply_vector_index(vector_index)
+        query_template = f"CALL mysql.create_vector_index('{vector_index.name}', '{self.db_name}.{self.table_name}', '{self.embedding_column}', '{{}}');"
+        self.__exec_apply_vector_index(query_template, vector_index)
         # After applying an index to the table, set the query option search type to be ANN
         self.query_options.search_type = SearchType.ANN
 
-    def __exec_apply_vector_index(self, vector_index: VectorIndex):
+    def alter_vector_index(self, vector_index: VectorIndex):
         existing_index_name = self._get_vector_index_name()
-        if (
-            existing_index_name
-            and existing_index_name == f"{self.db_name}.{vector_index.name}"
-        ):
-            base_query_template = (
-                f"CALL mysql.alter_vector_index('{existing_index_name}', '{{}}');"
+        if not existing_index_name:
+            raise ValueError("No existing vector index found.")
+        if not vector_index.name:
+            vector_index.name = existing_index_name.split(".")[1]
+        if existing_index_name.split(".")[1] != vector_index.name:
+            raise ValueError(
+                f"Existing index name {existing_index_name} does not match the new index name {vector_index.name}."
             )
-        else:
-            self.drop_vector_index()
-            base_query_template = f"CALL mysql.create_vector_index('{vector_index.name}', '{self.db_name}.{self.table_name}', '{self.embedding_column}', '{{}}');"
+        query_template = (
+            f"CALL mysql.alter_vector_index('{existing_index_name}', '{{}}');"
+        )
+        self.__exec_apply_vector_index(query_template, vector_index)
 
+    def __exec_apply_vector_index(self, query_template: str, vector_index: VectorIndex):
         index_options = []
         if vector_index.index_type:
             index_options.append(f"index_type={vector_index.index_type.value}")
@@ -251,7 +255,7 @@ class MySQLVectorStore(VectorStore):
             index_options.append(f"num_neighbors={vector_index.num_neighbors}")
         index_options_query = ",".join(index_options)
 
-        stmt = base_query_template.format(index_options_query)
+        stmt = query_template.format(index_options_query)
         self.engine._execute_outside_tx(stmt)
 
     def _get_vector_index_name(self):

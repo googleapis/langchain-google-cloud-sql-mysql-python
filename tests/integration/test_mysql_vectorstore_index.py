@@ -111,6 +111,7 @@ class TestVectorStoreFromMethods:
             ]
             ids = [str(uuid.uuid4()) for _ in range(len(texts_1000))]
             vs_1000.add_texts(texts_1000, ids=ids)
+        vs_1000.drop_vector_index()
         yield vs_1000
         vs_1000.drop_vector_index()
 
@@ -132,8 +133,17 @@ class TestVectorStoreFromMethods:
             == f"{vs.db_name}.{vs.table_name}_langchainvectorindex"
         )
         assert vs.query_options.search_type == SearchType.ANN
-        vs.apply_vector_index(VectorIndex(name="new_index", num_neighbors=10))
-        assert vs._get_vector_index_name() == f"{vs.db_name}.new_index"
+        vs.alter_vector_index(
+            VectorIndex(
+                index_type=IndexType.BRUTE_FORCE_SCAN,
+                distance_measure=DistanceMeasure.SQUARED_L2,
+                num_neighbors=10,
+            )
+        )
+        assert (
+            vs._get_vector_index_name()
+            == f"{vs.db_name}.{vs.table_name}_langchainvectorindex"
+        )
         vs.drop_vector_index()
         assert vs.query_options.search_type == SearchType.KNN
 
