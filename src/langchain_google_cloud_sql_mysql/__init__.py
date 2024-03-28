@@ -14,16 +14,22 @@
 
 from .chat_message_history import MySQLChatMessageHistory
 from .engine import Column, MySQLEngine
+from .indexes import DistanceMeasure, IndexType, QueryOptions, SearchType, VectorIndex
 from .loader import MySQLDocumentSaver, MySQLLoader
 from .vectorstore import MySQLVectorStore
 from .version import __version__
 
 __all__ = [
     "Column",
+    "DistanceMeasure",
+    "IndexType",
     "MySQLChatMessageHistory",
     "MySQLDocumentSaver",
     "MySQLEngine",
     "MySQLLoader",
     "MySQLVectorStore",
+    "QueryOptions",
+    "SearchType",
+    "VectorIndex",
     "__version__",
 ]
