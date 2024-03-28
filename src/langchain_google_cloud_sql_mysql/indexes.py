@@ -43,16 +43,6 @@ class QueryOptions:
     num_neighbors: Optional[int] = None
     search_type: SearchType = SearchType.KNN
 
-    def to_string(self) -> str:
-        """Generates a custom string representation of the QueryOptions instance."""
-        return str(
-            {
-                "num_partitions": self.num_partitions,
-                "num_neighbors": self.num_neighbors,
-                "search_type": self.search_type.name,
-            }
-        )
-
 
 DEFAULT_QUERY_OPTIONS = QueryOptions()
 

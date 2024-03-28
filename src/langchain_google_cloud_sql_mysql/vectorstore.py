@@ -252,7 +252,7 @@ class MySQLVectorStore(VectorStore):
         index_options_query = ",".join(index_options)
 
         stmt = base_query_template.format(index_options_query)
-        self.engine._execute(stmt)
+        self.engine._execute_outside_tx(stmt)
 
     def _get_vector_index_name(self):
         query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
@@ -265,7 +265,7 @@ class MySQLVectorStore(VectorStore):
     def drop_vector_index(self):
         existing_index_name = self._get_vector_index_name()
         if existing_index_name:
-            self.engine._execute(
+            self.engine._execute_outside_tx(
                 f"CALL mysql.drop_vector_index('{existing_index_name}');"
             )
         self.query_options.search_type = SearchType.KNN

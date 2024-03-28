@@ -222,7 +222,13 @@ class MySQLEngine:
         return self.engine.connect()
 
     def _execute(self, query: str, params: Optional[dict] = None) -> None:
-        """Execute a SQL query."""
+        """Executes a SQL query within a transaction."""
+        with self.engine.connect() as conn:
+            conn.execute(sqlalchemy.text(query), params)
+            conn.commit()
+
+    def _execute_outside_tx(self, query: str, params: Optional[dict] = None) -> None:
+        """Executes a SQL query with autocommit (outside of transaction)."""
         with self.engine.connect() as conn:
             conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             conn.execute(sqlalchemy.text(query), params)
