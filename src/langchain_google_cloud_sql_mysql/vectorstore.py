@@ -16,14 +16,22 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List, Optional, Type
+from typing import Any, Iterable, List, Optional, Tuple, Type, Union
 
+import numpy as np
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from .engine import MySQLEngine
-from .indexes import DEFAULT_QUERY_OPTIONS, QueryOptions, SearchType, VectorIndex
+from .indexes import (
+    DEFAULT_QUERY_OPTIONS,
+    DistanceMeasure,
+    QueryOptions,
+    SearchType,
+    VectorIndex,
+)
+from .loader import _parse_doc_from_row
 
 DEFAULT_INDEX_NAME_SUFFIX = "langchainvectorindex"
 
@@ -41,6 +49,9 @@ class MySQLVectorStore(VectorStore):
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
         query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
+        k: int = 4,
+        fetch_k: int = 20,
+        lambda_mult: float = 0.5,
     ):
         """Constructor for MySQLVectorStore.
         Args:
@@ -120,6 +131,9 @@ class MySQLVectorStore(VectorStore):
         self.id_column = id_column
         self.metadata_json_column = metadata_json_column
         self.query_options = query_options
+        self.k = k
+        self.fetch_k = fetch_k
+        self.lambda_mult = lambda_mult
         self.db_name = self.__get_db_name()
 
     @property
@@ -129,6 +143,12 @@ class MySQLVectorStore(VectorStore):
     def __get_db_name(self) -> str:
         result = self.engine._fetch("SELECT DATABASE();")
         return result[0]["DATABASE()"]
+
+    def __get_column_names(self) -> List[str]:
+        results = self.engine._fetch(
+            f"SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = '{self.db_name}' AND `TABLE_NAME` = '{self.table_name}'"
+        )
+        return [r["COLUMN_NAME"] for r in results]
 
     def _add_embeddings(
         self,
@@ -348,5 +368,384 @@ class MySQLVectorStore(VectorStore):
         k: Optional[int] = None,
         filter: Optional[str] = None,
         **kwargs: Any,
-    ):
-        raise NotImplementedError
+    ) -> List[Document]:
+        """Searches for similar documents based on a text query.
+
+        Args:
+            query: The text query to search for.
+            k: The number of similar documents to return.
+            filter: A filter expression to apply to the search results.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of similar documents.
+        """
+        embedding = self.embedding_service.embed_query(query)
+        docs = self.similarity_search_by_vector(
+            embedding=embedding, k=k, filter=filter, **kwargs
+        )
+        return docs
+
+    def similarity_search_by_vector(
+        self,
+        embedding: List[float],
+        k: Optional[int] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Searches for similar documents based on a vector embedding.
+
+        Args:
+            embedding: The vector embedding to search for.
+            k: The number of similar documents to return.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of similar documents.
+        """
+        docs_and_scores = self.similarity_search_with_score_by_vector(
+            embedding=embedding,
+            k=k,
+            filter=filter,
+            query_options=query_options,
+            **kwargs,
+        )
+
+        return [doc for doc, _ in docs_and_scores]
+
+    def similarity_search_with_score(
+        self,
+        query: str,
+        k: Optional[int] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Searches for similar documents based on a text query and returns their scores.
+
+        Args:
+            query: The text query to search for.
+            k: The number of similar documents to return.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of tuples, where each tuple contains a document and its similarity score.
+        """
+        embedding = self.embedding_service.embed_query(query)
+        docs_with_scores = self.similarity_search_with_score_by_vector(
+            embedding=embedding,
+            k=k,
+            filter=filter,
+            query_options=query_options,
+            **kwargs,
+        )
+        return docs_with_scores
+
+    def similarity_search_with_score_by_vector(
+        self,
+        embedding: List[float],
+        k: Optional[int] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Searches for similar documents based on a vector embedding and returns their scores.
+
+        Args:
+            embedding: The vector embedding to search for.
+            k: The number of similar documents to return.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of tuples, where each tuple contains a document and its similarity score.
+        """
+        results = self._query_collection(
+            embedding=embedding,
+            k=k,
+            filter=filter,
+            map_results=False,
+            query_options=query_options,
+            **kwargs,
+        )
+
+        documents_with_scores = []
+
+        for row in results:
+            row = row._asdict()
+            if row.get(self.metadata_json_column):
+                row[self.metadata_json_column] = json.loads(
+                    row[self.metadata_json_column]
+                )
+            document = _parse_doc_from_row(
+                content_columns=[self.content_column],
+                metadata_columns=self.metadata_columns,
+                row=row,
+                metadata_json_column=self.metadata_json_column,
+            )
+
+            documents_with_scores.append(
+                (
+                    document,
+                    row["distance"],
+                )
+            )
+
+        return documents_with_scores
+
+    def max_marginal_relevance_search(
+        self,
+        query: str,
+        k: Optional[int] = None,
+        fetch_k: Optional[int] = None,
+        lambda_mult: Optional[float] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Performs Maximal Marginal Relevance (MMR) search based on a text query.
+
+        Args:
+            query: The text query to search for.
+            k: The number of documents to return.
+            fetch_k: The number of documents to initially retrieve.
+            lambda_mult: The weight for balancing relevance and diversity.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of documents selected using MMR.
+        """
+        embedding = self.embedding_service.embed_query(text=query)
+
+        return self.max_marginal_relevance_search_by_vector(
+            embedding=embedding,
+            k=k,
+            fetch_k=fetch_k,
+            lambda_mult=lambda_mult,
+            filter=filter,
+            query_options=query_options,
+            **kwargs,
+        )
+
+    def max_marginal_relevance_search_by_vector(
+        self,
+        embedding: List[float],
+        k: Optional[int] = None,
+        fetch_k: Optional[int] = None,
+        lambda_mult: Optional[float] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Performs Maximal Marginal Relevance (MMR) search based on a vector embedding.
+
+        Args:
+            embedding: The vector embedding to search for.
+            k: The number of documents to return.
+            fetch_k: The number of documents to initially retrieve.
+            lambda_mult: The weight for balancing relevance and diversity.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of documents selected using MMR.
+        """
+        docs_and_scores = self.max_marginal_relevance_search_with_score_by_vector(
+            embedding,
+            k=k,
+            fetch_k=fetch_k,
+            lambda_mult=lambda_mult,
+            filter=filter,
+            query_options=query_options,
+            **kwargs,
+        )
+
+        return [result[0] for result in docs_and_scores]
+
+    def max_marginal_relevance_search_with_score_by_vector(
+        self,
+        embedding: List[float],
+        k: Optional[int] = None,
+        fetch_k: Optional[int] = None,
+        lambda_mult: Optional[float] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Performs Maximal Marginal Relevance (MMR) search based on a vector embedding and returns documents with scores.
+
+        Args:
+            embedding: The vector embedding to search for.
+            k: The number of documents to return.
+            fetch_k: The number of documents to initially retrieve.
+            lambda_mult: The weight for balancing relevance and diversity.
+            filter: A filter expression to apply to the search results.
+            query_options: Additional query options.
+            **kwargs: Additional keyword arguments to pass to the search function.
+
+        Returns:
+            A list of tuples, where each tuple contains a document and its similarity score, selected using MMR.
+        """
+        results = self._query_collection(
+            embedding=embedding,
+            k=fetch_k,
+            filter=filter,
+            map_results=False,
+            query_options=query_options,
+            **kwargs,
+        )
+        results = [row._asdict() for row in results]
+
+        k = k if k else self.k
+        fetch_k = fetch_k if fetch_k else self.fetch_k
+        lambda_mult = lambda_mult if lambda_mult else self.lambda_mult
+        embedding_list = [json.loads(row[self.embedding_column]) for row in results]
+        mmr_selected = maximal_marginal_relevance(
+            np.array(embedding, dtype=np.float32),
+            embedding_list,
+            k=k,
+            lambda_mult=lambda_mult,
+        )
+
+        documents_with_scores = []
+        for row in results:
+            if row.get(self.metadata_json_column):
+                row[self.metadata_json_column] = json.loads(
+                    row[self.metadata_json_column]
+                )
+            document = _parse_doc_from_row(
+                content_columns=[self.content_column],
+                metadata_columns=self.metadata_columns,
+                row=row,
+                metadata_json_column=self.metadata_json_column,
+            )
+
+            documents_with_scores.append(
+                (
+                    document,
+                    row["distance"],
+                )
+            )
+
+        return [r for i, r in enumerate(documents_with_scores) if i in mmr_selected]
+
+    def _query_collection(
+        self,
+        embedding: List[float],
+        k: Optional[int] = None,
+        filter: Optional[str] = None,
+        query_options: Optional[QueryOptions] = None,
+        map_results: Optional[bool] = True,
+    ) -> List[Any]:
+        column_names = self.__get_column_names()
+        # Apply vector_to_string to the embedding_column
+        for i, v in enumerate(column_names):
+            if v == self.embedding_column:
+                column_names[i] = f"vector_to_string({v}) as {self.embedding_column}"
+        column_query = ", ".join(column_names)
+        query_options = query_options if query_options else self.query_options
+        if query_options.num_partitions and query_options.search_type == SearchType.KNN:
+            raise ValueError("num_partitions is not supported for the search type KNN")
+
+        k = k if k else query_options.num_neighbors
+        distance_function = (
+            f"{query_options.distance_measure.value}_distance"
+            if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
+            else query_options.distance_measure.value
+        )
+        if query_options.search_type == SearchType.KNN:
+            filter = f"WHERE {filter}" if filter else ""
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM {self.table_name} {filter} ORDER BY distance LIMIT {k};"
+        else:
+            filter = f"AND {filter}" if filter else ""
+            num_partitions = (
+                f",num_partitions={query_options.num_partitions}"
+                if query_options.num_partitions
+                else ""
+            )
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM {self.table_name} WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+
+        # return self.engine._fetch(stmt)
+        if map_results:
+            return self.engine._fetch(stmt)
+        else:
+            return self.engine._fetch_rows(stmt)
+
+
+### The following is copied from langchain-community until it's moved into core
+
+Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
+
+
+def maximal_marginal_relevance(
+    query_embedding: np.ndarray,
+    embedding_list: list,
+    lambda_mult: float = 0.5,
+    k: int = 4,
+) -> List[int]:
+    """Calculate maximal marginal relevance."""
+    if min(k, len(embedding_list)) <= 0:
+        return []
+    if query_embedding.ndim == 1:
+        query_embedding = np.expand_dims(query_embedding, axis=0)
+    similarity_to_query = cosine_similarity(query_embedding, embedding_list)[0]
+    most_similar = int(np.argmax(similarity_to_query))
+    idxs = [most_similar]
+    selected = np.array([embedding_list[most_similar]])
+    while len(idxs) < min(k, len(embedding_list)):
+        best_score = -np.inf
+        idx_to_add = -1
+        similarity_to_selected = cosine_similarity(embedding_list, selected)
+        for i, query_score in enumerate(similarity_to_query):
+            if i in idxs:
+                continue
+            redundant_score = max(similarity_to_selected[i])
+            equation_score = (
+                lambda_mult * query_score - (1 - lambda_mult) * redundant_score
+            )
+            if equation_score > best_score:
+                best_score = equation_score
+                idx_to_add = i
+        idxs.append(idx_to_add)
+        selected = np.append(selected, [embedding_list[idx_to_add]], axis=0)
+    return idxs
+
+
+def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
+    """Row-wise cosine similarity between two equal-width matrices."""
+    if len(X) == 0 or len(Y) == 0:
+        return np.array([])
+
+    X = np.array(X)
+    Y = np.array(Y)
+    if X.shape[1] != Y.shape[1]:
+        raise ValueError(
+            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
+            f"and Y has shape {Y.shape}."
+        )
+    try:
+        import simsimd as simd  # type: ignore
+
+        X = np.array(X, dtype=np.float32)
+        Y = np.array(Y, dtype=np.float32)
+        Z = 1 - simd.cdist(X, Y, metric="cosine")
+        if isinstance(Z, float):
+            return np.array([Z])
+        return Z
+    except ImportError:
+        X_norm = np.linalg.norm(X, axis=1)
+        Y_norm = np.linalg.norm(Y, axis=1)
+        # Ignore divide by zero errors run time warnings as those are handled below.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)
+        similarity[np.isnan(similarity) | np.isinf(similarity)] = 0.0
+        return similarity

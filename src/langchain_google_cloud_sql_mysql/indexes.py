@@ -29,18 +29,33 @@ class SearchType(Enum):
     ANN = "ANN"
 
 
+class DistanceMeasure(Enum):
+    """Enumerates the types of distance measures that can be used in searches.
+
+    Attributes:
+        COSINE: Cosine similarity measure.
+        L2_SQUARED: Squared L2 norm (Euclidean) distance.
+        DOT_PRODUCT: Dot product similarity.
+    """
+
+    COSINE = "cosine"
+    L2_SQUARED = "l2_squared"
+    DOT_PRODUCT = "dot_product"
+
+
 @dataclass
 class QueryOptions:
     """Holds configuration options for executing a search query.
 
     Attributes:
         num_partitions (Optional[int]): The number of partitions to divide the search space into. None means default partitioning.
-        num_neighbors (Optional[int]): The number of nearest neighbors to retrieve. None means use the default.
+        num_neighbors (int): The number of nearest neighbors to retrieve. Default to 10.
         search_type (SearchType): The type of search algorithm to use. Defaults to KNN.
     """
 
     num_partitions: Optional[int] = None
-    num_neighbors: Optional[int] = None
+    num_neighbors: int = 10
+    distance_measure: DistanceMeasure = DistanceMeasure.L2_SQUARED
     search_type: SearchType = SearchType.KNN
 
 
@@ -59,20 +74,6 @@ class IndexType(Enum):
     BRUTE_FORCE_SCAN = "BRUTE_FORCE"
     TREE_AH = "TREE_AH"
     TREE_SQ = "TREE_SQ"
-
-
-class DistanceMeasure(Enum):
-    """Enumerates the types of distance measures that can be used in searches.
-
-    Attributes:
-        COSINE: Cosine similarity measure.
-        SQUARED_L2: Squared L2 norm (Euclidean) distance.
-        DOT_PRODUCT: Dot product similarity.
-    """
-
-    COSINE = "cosine"
-    SQUARED_L2 = "squared_l2"
-    DOT_PRODUCT = "dot_product"
 
 
 class VectorIndex:
