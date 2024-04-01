@@ -241,6 +241,13 @@ class MySQLEngine:
             result_fetch = result_map.fetchall()
             return result_fetch
 
+    def _fetch_rows(self, query: str, params: Optional[dict] = None):
+        """Fetch results from a SQL query as rows."""
+        with self.engine.connect() as conn:
+            result = conn.execute(sqlalchemy.text(query), params)
+            result_fetch = result.fetchall()  # Directly fetch rows
+            return result_fetch
+
     def init_chat_history_table(self, table_name: str) -> None:
         """Create table with schema required for MySQLChatMessageHistory class.
 

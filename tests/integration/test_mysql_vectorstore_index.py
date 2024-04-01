@@ -136,7 +136,7 @@ class TestVectorStoreFromMethods:
         vs.alter_vector_index(
             VectorIndex(
                 index_type=IndexType.BRUTE_FORCE_SCAN,
-                distance_measure=DistanceMeasure.SQUARED_L2,
+                distance_measure=DistanceMeasure.L2_SQUARED,
                 num_neighbors=10,
             )
         )
@@ -152,7 +152,7 @@ class TestVectorStoreFromMethods:
             VectorIndex(
                 name="tree_sq",
                 index_type=IndexType.TREE_SQ,
-                distance_measure=DistanceMeasure.SQUARED_L2,
+                distance_measure=DistanceMeasure.L2_SQUARED,
                 num_partitions=1,
                 num_neighbors=5,
             )
