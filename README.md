@@ -35,7 +35,7 @@ source <your-env>/bin/activate
 
 ## Vector Store Usage
 
-Use a [vectore store](https://python.langchain.com/docs/modules/data_connection/vectorstores/) to store
+Use a [vector store](https://python.langchain.com/docs/modules/data_connection/vectorstores/) to store
 embedded data and perform vector search.
 
 ```python
