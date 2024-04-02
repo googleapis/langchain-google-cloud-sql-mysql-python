@@ -33,6 +33,28 @@ source <your-env>/bin/activate
 <your-env>/bin/pip install langchain-google-cloud-sql-mysql
 ```
 
+## Vector Store Usage
+
+Use a [vectore store](https://python.langchain.com/docs/modules/data_connection/vectorstores/) to store
+embedded data and perform vector search.
+
+```python
+from langchain_google_cloud_sql_mysql import MySQLEngine, MySQLVectorStore
+from langchain_google_vertexai import VertexAIEmbeddings
+
+
+engine = MySQLEngine.from_instance("project-id", "region", "my-instance", "my-database")
+engine.init_vectorstore_table(
+    table_name="my-table",
+    vector_size=768,  # Vector size for `VertexAIEmbeddings()`
+)
+vectorstore = MySQLVectorStore(
+    engine,
+    embedding_service=VertextAIEmbeddings()
+    table_name="my-table",
+)
+```
+
 ## Document Loader Usage
 
 Use a [document loader](https://python.langchain.com/docs/modules/data_connection/document_loaders/) to load data as LangChain `Document`s.
