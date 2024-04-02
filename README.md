@@ -50,7 +50,7 @@ engine.init_vectorstore_table(
 )
 vectorstore = MySQLVectorStore(
     engine,
-    embedding_service=VertextAIEmbeddings()
+    embedding_service=VertextAIEmbeddings(),
     table_name="my-table",
 )
 ```
