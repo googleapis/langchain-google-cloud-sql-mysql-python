@@ -28,8 +28,9 @@ from langchain_google_cloud_sql_mysql import (
     VectorIndex,
 )
 
-TABLE_1000_ROWS = "test_table_1000_rows_search"
+TABLE_1000_ROWS = "test_table_1000_rows_search" + str(uuid.uuid4()).split("-")[0]
 VECTOR_SIZE = 8
+DEFAULT_INDEX = VectorIndex(index_type=IndexType.TREE_SQ)
 
 embeddings_service = DeterministicFakeEmbedding(size=VECTOR_SIZE)
 
@@ -99,9 +100,10 @@ class TestVectorStoreFromMethods:
             ids = [str(uuid.uuid4()) for _ in range(len(texts_1000))]
             vs_1000.add_texts(texts_1000, ids=ids)
         vs_1000.drop_vector_index()
-        vs_1000.apply_vector_index(VectorIndex(index_type=IndexType.TREE_SQ))
+        vs_1000.apply_vector_index(DEFAULT_INDEX)
         yield vs_1000
         vs_1000.drop_vector_index()
+        engine._execute(f"DROP TABLE IF EXISTS `{TABLE_1000_ROWS}`")
 
     def test_search_query_collection_knn(self, vs_1000):
         result = vs_1000._query_collection(self.apple_100_embedding, k=10)
@@ -117,6 +119,7 @@ class TestVectorStoreFromMethods:
         assert result[0]["content"] == "apple_154"
 
     def test_search_query_collection_distance_measure(self, vs_1000):
+        vs_1000.apply_vector_index(DEFAULT_INDEX)
         for measure in [
             DistanceMeasure.COSINE,
             DistanceMeasure.DOT_PRODUCT,
@@ -129,6 +132,7 @@ class TestVectorStoreFromMethods:
                 )[0]["content"]
                 == self.apple_100_text
             )
+        vs_1000.drop_vector_index()
 
     def test_search_raise_when_num_partitions_set_for_knn(self, vs_1000):
         with pytest.raises(
