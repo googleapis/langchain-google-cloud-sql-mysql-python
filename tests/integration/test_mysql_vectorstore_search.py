@@ -28,7 +28,7 @@ from langchain_google_cloud_sql_mysql import (
     VectorIndex,
 )
 
-TABLE_1000_ROWS = "test_table_1000_rows_search"
+TABLE_1000_ROWS = "test_table_1000_rows_search" + str(uuid.uuid4()).split("-")[0]
 VECTOR_SIZE = 8
 DEFAULT_INDEX = VectorIndex(index_type=IndexType.TREE_SQ)
 
@@ -103,6 +103,7 @@ class TestVectorStoreFromMethods:
         vs_1000.apply_vector_index(DEFAULT_INDEX)
         yield vs_1000
         vs_1000.drop_vector_index()
+        engine._execute(f"DROP TABLE IF EXISTS `{TABLE_1000_ROWS}`")
 
     def test_search_query_collection_knn(self, vs_1000):
         result = vs_1000._query_collection(self.apple_100_embedding, k=10)
