@@ -30,9 +30,9 @@ from langchain_google_cloud_sql_mysql import (
 
 TABLE_1000_ROWS = "test_table_1000_rows_search"
 VECTOR_SIZE = 8
+DEFAULT_INDEX = VectorIndex(index_type=IndexType.TREE_SQ)
 
 embeddings_service = DeterministicFakeEmbedding(size=VECTOR_SIZE)
-
 
 def get_env_var(key: str, desc: str) -> str:
     v = os.environ.get(key)
@@ -99,7 +99,6 @@ class TestVectorStoreFromMethods:
             ids = [str(uuid.uuid4()) for _ in range(len(texts_1000))]
             vs_1000.add_texts(texts_1000, ids=ids)
         vs_1000.drop_vector_index()
-        vs_1000.apply_vector_index(VectorIndex(index_type=IndexType.TREE_SQ))
         yield vs_1000
         vs_1000.drop_vector_index()
 
@@ -117,6 +116,7 @@ class TestVectorStoreFromMethods:
         assert result[0]["content"] == "apple_154"
 
     def test_search_query_collection_distance_measure(self, vs_1000):
+        vs_1000.apply_vector_index(DEFAULT_INDEX)
         for measure in [
             DistanceMeasure.COSINE,
             DistanceMeasure.DOT_PRODUCT,
@@ -129,6 +129,7 @@ class TestVectorStoreFromMethods:
                 )[0]["content"]
                 == self.apple_100_text
             )
+        vs_1000.drop_vector_index()
 
     def test_search_raise_when_num_partitions_set_for_knn(self, vs_1000):
         with pytest.raises(
