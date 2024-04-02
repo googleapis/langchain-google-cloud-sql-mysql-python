@@ -48,10 +48,10 @@ class MySQLVectorStore(VectorStore):
         ignore_metadata_columns: Optional[List[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
-        query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
+        query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
     ):
         """Constructor for MySQLVectorStore.
         Args:
@@ -71,6 +71,17 @@ class MySQLVectorStore(VectorStore):
                 Defaults to "langchain_id".
             metadata_json_column (str): Column to store metadata as JSON.
                 Defaults to "langchain_metadata".
+            k (int): The number of documents to return as the final result of a
+                similarity search. Defaults to 4.
+            fetch_k (int): The number of documents to initially retrieve from
+                the database during a similarity search. These documents are
+                then re-ranked using MMR to select the final `k` documents.
+                Defaults to 20.
+            lambda_mult (float): The weight used to balance relevance and
+                diversity in the MMR algorithm. A higher value emphasizes
+                diversity more, while a lower value prioritizes relevance.
+                Defaults to 0.5.
+            query_options: Additional query options.
         """
         if metadata_columns and ignore_metadata_columns:
             raise ValueError(
@@ -130,10 +141,10 @@ class MySQLVectorStore(VectorStore):
         self.metadata_columns = metadata_columns
         self.id_column = id_column
         self.metadata_json_column = metadata_json_column
-        self.query_options = query_options
         self.k = k
         self.fetch_k = fetch_k
         self.lambda_mult = lambda_mult
+        self.query_options = query_options
         self.db_name = self.__get_db_name()
 
     @property
