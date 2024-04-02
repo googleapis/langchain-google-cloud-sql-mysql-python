@@ -100,6 +100,7 @@ class TestVectorStoreFromMethods:
             ids = [str(uuid.uuid4()) for _ in range(len(texts_1000))]
             vs_1000.add_texts(texts_1000, ids=ids)
         vs_1000.drop_vector_index()
+        vs_1000.apply_vector_index(DEFAULT_INDEX)
         yield vs_1000
         vs_1000.drop_vector_index()
 
