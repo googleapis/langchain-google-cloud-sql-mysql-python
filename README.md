@@ -45,13 +45,13 @@ from langchain_google_vertexai import VertexAIEmbeddings
 
 engine = MySQLEngine.from_instance("project-id", "region", "my-instance", "my-database")
 engine.init_vectorstore_table(
-    table_name="my-table",
+    table_name="my-table-name",
     vector_size=768,  # Vector size for `VertexAIEmbeddings()`
 )
 vectorstore = MySQLVectorStore(
     engine,
     embedding_service=VertextAIEmbeddings(),
-    table_name="my-table",
+    table_name="my-table-name",
 )
 ```
 
