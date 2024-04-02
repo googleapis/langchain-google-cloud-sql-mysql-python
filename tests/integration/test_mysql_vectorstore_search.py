@@ -34,6 +34,7 @@ DEFAULT_INDEX = VectorIndex(index_type=IndexType.TREE_SQ)
 
 embeddings_service = DeterministicFakeEmbedding(size=VECTOR_SIZE)
 
+
 def get_env_var(key: str, desc: str) -> str:
     v = os.environ.get(key)
     if v is None:
