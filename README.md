@@ -55,6 +55,8 @@ vectorstore = MySQLVectorStore(
 )
 ```
 
+See the full [Vector Store][vectorstore] tutorial.
+
 ## Document Loader Usage
 
 Use a [document loader](https://python.langchain.com/docs/modules/data_connection/document_loaders/) to load data as LangChain `Document`s.
@@ -117,3 +119,4 @@ This is not an officially supported Google product.
 [loader]: ./docs/document_loader.ipynb
 [history]: ./docs/chat_message_history.ipynb
 [langchain]: https://github.com/langchain-ai/langchain
+[vectorstore]: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/tree/main/docs/vector_store.ipynb
