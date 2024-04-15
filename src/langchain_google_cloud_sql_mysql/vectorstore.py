@@ -675,7 +675,7 @@ class MySQLVectorStore(VectorStore):
         )
         if query_options.search_type == SearchType.KNN:
             filter = f"WHERE {filter}" if filter else ""
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM {self.table_name} {filter} ORDER BY distance LIMIT {k};"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
         else:
             filter = f"AND {filter}" if filter else ""
             num_partitions = (
@@ -683,7 +683,7 @@ class MySQLVectorStore(VectorStore):
                 if query_options.num_partitions
                 else ""
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM {self.table_name} WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
 
         # return self.engine._fetch(stmt)
         if map_results:
