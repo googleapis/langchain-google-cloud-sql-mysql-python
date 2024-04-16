@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.1](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.0...v0.2.1) (2024-04-15)
+
+
+### Bug Fixes
+
+* Allow similarity search on table names with special characters ([#65](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/65)) ([4832524](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/4832524b4b5ab9eddeb2a1bdc919608f59945652))
+
+## [0.2.0](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.1.0...v0.2.0) (2024-04-08)
+
+
+### Features
+
+* Add index types for vector search ([#55](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/55)) ([2e30b48](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/2e30b48ad2d1fb11f5f8964808ed5143d9231084))
+* Add MySQLVectorStore initialization methods ([#52](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/52)) ([a1c9411](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/a1c941149e1f1b33991b997e5236c4a7971058fd))
+* Adding search functions and tests ([#56](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/56)) ([5b80694](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/5b806947e5c827ebca553a68ff74a14c7d22a6a5))
+* **ci:** Run tests against multiple versions ([#51](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/51)) ([3439c9d](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/3439c9d6a277a95da835f1c59d4727855a187dee))
+* Support add and delete from MySQLVectorStore ([#53](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/53)) ([ce45617](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/ce45617ae6c9f1b6e539c31e4bcdd47aa7daf964))
+
+
+### Documentation
+
+* Add basic MySQLVectorStore usage to README ([#58](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/58)) ([e871c2b](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/e871c2b503fb0d056d7e374394db36e44dcda4c2))
+* Add end-to-end MySQL quickstart ([#61](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/61)) ([388f5a4](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/388f5a4e6b76d23c1e683029c5ea034cfe84bbf7))
+* Add github links ([#46](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/46)) ([54fbab5](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/54fbab5fd41e7b49a2d5da800afad5d3fb66b40c))
+* Add MySQLVectorStore reference notebook ([#59](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/59)) ([0ece837](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/0ece837e98ff60512d26b5c7c8fb4803e056ad3c))
+
 ## 0.1.0 (2024-02-22)
 
 
