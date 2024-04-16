@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.0...v0.2.1) (2024-04-15)
+
+
+### Bug Fixes
+
+* Allow similarity search on table names with special characters ([#65](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/65)) ([4832524](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/4832524b4b5ab9eddeb2a1bdc919608f59945652))
+
 ## [0.2.0](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.1.0...v0.2.0) (2024-04-08)
 
 
