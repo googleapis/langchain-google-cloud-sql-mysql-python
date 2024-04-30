@@ -55,32 +55,18 @@ class MySQLVectorStore(VectorStore):
     ):
         """Constructor for MySQLVectorStore.
         Args:
-            engine (MySQLEngine): Connection pool engine for managing
-                connections to Cloud SQL for MySQL database.
+            engine (MySQLEngine): Connection pool engine for managing connections to Cloud SQL for MySQL database.
             embedding_service (Embeddings): Text embedding model to use.
             table_name (str): Name of an existing table or table to be created.
-            content_column (str): Column that represent a Document's
-                page_content. Defaults to "content".
-            embedding_column (str): Column for embedding vectors. The embedding
-                is generated from the document value. Defaults to "embedding".
+            content_column (str): Column that represent a Document's page_content. Defaults to "content".
+            embedding_column (str): Column for embedding vectors. The embedding is generated from the document value. Defaults to "embedding".
             metadata_columns (List[str]): Column(s) that represent a document's metadata.
-            ignore_metadata_columns (List[str]): Column(s) to ignore in
-                pre-existing tables for a document's metadata. Can not be used
-                with metadata_columns. Defaults to None.
-            id_column (str): Column that represents the Document's id.
-                Defaults to "langchain_id".
-            metadata_json_column (str): Column to store metadata as JSON.
-                Defaults to "langchain_metadata".
-            k (int): The number of documents to return as the final result of a
-                similarity search. Defaults to 4.
-            fetch_k (int): The number of documents to initially retrieve from
-                the database during a similarity search. These documents are
-                then re-ranked using MMR to select the final `k` documents.
-                Defaults to 20.
-            lambda_mult (float): The weight used to balance relevance and
-                diversity in the MMR algorithm. A higher value emphasizes
-                diversity more, while a lower value prioritizes relevance.
-                Defaults to 0.5.
+            ignore_metadata_columns (List[str]): Column(s) to ignore in pre-existing tables for a document's metadata. Can not be used with metadata_columns. Defaults to None.
+            id_column (str): Column that represents the Document's id. Defaults to "langchain_id".
+            metadata_json_column (str): Column to store metadata as JSON. Defaults to "langchain_metadata".
+            k (int): The number of documents to return as the final result of a similarity search. Defaults to 4.
+            fetch_k (int): The number of documents to initially retrieve from the database during a similarity search. These documents are then re-ranked using MMR to select the final `k` documents. Defaults to 20.
+            lambda_mult (float): The weight used to balance relevance and diversity in the MMR algorithm. A higher value emphasizes diversity more, while a lower value prioritizes relevance. Defaults to 0.5.
             query_options: Additional query options.
         """
         if metadata_columns and ignore_metadata_columns:

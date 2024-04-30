@@ -19,6 +19,18 @@ dependencies = [
 [tool.setuptools.dynamic]
 version = {attr = "langchain_google_cloud_sql_mysql.version.__version__"}
 
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
 [project.urls]
 Homepage = "https://github.com/googleapis/langchain-google-cloud-sql-mysql-python"
 Repository = "https://github.com/googleapis/langchain-google-cloud-sql-mysql-python.git"
@@ -42,8 +54,14 @@ build-backend = "setuptools.build_meta"
 profile = "black"
 
 [tool.mypy]
+python_version = "3.11"
 python_version = "3.8"
 warn_unused_configs = true
+
+exclude = [
+    'docs/*',
+    'noxfile.py'
+]
 
 [[tool.mypy.overrides]]
 module="google.auth.*"
