@@ -2,7 +2,7 @@
 name = "langchain-google-cloud-sql-mysql"
 dynamic = ["version"]
 description = "LangChain integrations for Google Cloud SQL for MySQL"
-readme = "README.md"
+readme = "README.rst"
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
 authors = [
