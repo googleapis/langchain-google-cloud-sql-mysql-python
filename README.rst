@@ -1,7 +1,7 @@
 Cloud SQL for MySQL for LangChain
 =================================
 
-- |preview| |pypi| |versions|
+|preview| |pypi| |versions|
 
 - `Client Library Documentation`_
 - `Product Documentation`_
@@ -23,12 +23,12 @@ steps:
 
 1. `Select or create a Cloud Platform project.`_
 2. `Enable billing for your project.`_
-3. `Enable the Google Cloud SQL API.`_
+3. `Enable the Google Cloud SQL Admin API.`_
 4. `Setup Authentication.`_
 
 .. _Select or create a Cloud Platform project.: https://console.cloud.google.com/project
 .. _Enable billing for your project.: https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project
-.. _Enable the Google Cloud SQL API.: https://console.cloud.google.com/flows/enableapi?apiid=sqladmin.googleapis.com
+.. _Enable the Google Cloud SQL Admin API.: https://console.cloud.google.com/flows/enableapi?apiid=sqladmin.googleapis.com
 .. _Setup Authentication.: https://googleapis.dev/python/google-api-core/latest/auth.html
 
 Installation

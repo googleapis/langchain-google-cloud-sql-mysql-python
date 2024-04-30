@@ -251,7 +251,9 @@ class MySQLEngine:
     def init_chat_history_table(self, table_name: str) -> None:
         """Create table with schema required for MySQLChatMessageHistory class.
 
-        Required schema is as follows::
+        Required schema is as follows:
+
+        ::
 
             CREATE TABLE {table_name} (
                 id INT AUTO_INCREMENT PRIMARY KEY,

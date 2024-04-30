@@ -57,11 +57,11 @@ profile = "black"
 python_version = "3.8"
 warn_unused_configs = true
 
+[[tool.mypy.overrides]]
+module="google.auth.*"
+ignore_missing_imports = true
+
 exclude = [
     'docs/*',
     'noxfile.py'
 ]
-
-[[tool.mypy.overrides]]
-module="google.auth.*"
-ignore_missing_imports = true
