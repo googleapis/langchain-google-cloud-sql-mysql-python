@@ -16,9 +16,6 @@ dependencies = [
     "cloud-sql-python-connector[pymysql]>=1.7.0, <2.0.0"
 ]
 
-[tool.setuptools.dynamic]
-version = {attr = "langchain_google_cloud_sql_mysql.version.__version__"}
-
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
@@ -30,6 +27,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "langchain_google_cloud_sql_mysql.version.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/googleapis/langchain-google-cloud-sql-mysql-python"
