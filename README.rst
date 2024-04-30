@@ -5,7 +5,6 @@ Cloud SQL for MySQL for LangChain
 
 - `Client Library Documentation`_
 - `Product Documentation`_
-- `API Reference`_
 
 .. |preview| image:: https://img.shields.io/badge/support-preview-orange.svg
    :target: https://cloud.google.com/products#product-launch-stages
@@ -13,9 +12,8 @@ Cloud SQL for MySQL for LangChain
    :target: https://pypi.org/project/langchain-google-cloud-sql-mysql/
 .. |versions| image:: https://img.shields.io/pypi/pyversions/langchain-google-cloud-sql-mysql.svg
    :target: https://pypi.org/project/langchain-google-cloud-sql-mysql/
-.. _Client Library Documentation: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python
+.. _Client Library Documentation: https://cloud.google.com/python/docs/reference/langchain-google-cloud-sql-mysql/latest
 .. _Product Documentation: https://cloud.google.com/sql/mysql
-.. _API Reference: https://cloud.google.com/python/docs/reference/langchain-google-cloud-sql-mysql/latest
 
 Quick Start
 -----------
@@ -85,7 +83,7 @@ Use a vector store to store embedded data and perform vector search.
    )
    vectorstore = MySQLVectorStore(
        engine,
-       embedding_service=VertexAIEmbeddings(),
+       embedding_service=VertexAIEmbeddings(model_name="textembedding-gecko@003"),
        table_name="my-table-name"
    )
 
