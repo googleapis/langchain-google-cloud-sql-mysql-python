@@ -2,7 +2,7 @@
 name = "langchain-google-cloud-sql-mysql"
 dynamic = ["version"]
 description = "LangChain integrations for Google Cloud SQL for MySQL"
-readme = "README.md"
+readme = "README.rst"
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
 authors = [
@@ -14,6 +14,18 @@ dependencies = [
     "numpy>=1.24.4, <2.0.0",
     "SQLAlchemy>=2.0.7, <3.0.0",
     "cloud-sql-python-connector[pymysql]>=1.7.0, <2.0.0"
+]
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 [tool.setuptools.dynamic]
@@ -45,6 +57,13 @@ profile = "black"
 python_version = "3.8"
 warn_unused_configs = true
 
+exclude = [
+    'docs/*',
+    'noxfile.py'
+]
+
 [[tool.mypy.overrides]]
 module="google.auth.*"
 ignore_missing_imports = true
+
+

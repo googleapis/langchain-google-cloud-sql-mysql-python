@@ -202,16 +202,14 @@ class MySQLDocumentSaver:
         """
         MySQLDocumentSaver allows for saving of langchain documents in a database. If the table
         doesn't exists, a table with default schema will be created. The default schema:
-            - page_content (type: text)
-            - langchain_metadata (type: JSON)
+        - page_content (type: text)
+        - langchain_metadata (type: JSON)
 
         Args:
           engine (MySQLEngine): MySQLEngine object to connect to the MySQL database.
           table_name (str): The name of table for saving documents.
-          content_column (str): The column to store document content.
-            Deafult: `page_content`. Optional.
-          metadata_json_column (str): The name of the JSON column to use as the metadata’s base
-            dictionary. Default: `langchain_metadata`. Optional.
+          content_column (str): The column to store document content. Deafult: `page_content`. Optional.
+          metadata_json_column (str): The name of the JSON column to use as the metadata’s base dictionary. Default: `langchain_metadata`. Optional.
         """
         self.engine = engine
         self.table_name = table_name
