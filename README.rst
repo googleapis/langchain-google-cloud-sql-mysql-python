@@ -89,7 +89,7 @@ Use a vector store to store embedded data and perform vector search.
 
 See the full `Vector Store`_ tutorial.
 
-.. _`Vector Store`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/tree/main/docs/vector_store.ipynb
+.. _`Vector Store`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/docs/vector_store.ipynb
 
 Document Loader Usage
 ~~~~~~~~~~~~~~~~~~~~~
@@ -109,7 +109,7 @@ Use a document loader to load data as LangChain ``Document``\ s.
 
 See the full `Document Loader`_ tutorial.
 
-.. _`Document Loader`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/tree/main/docs/document_loader.ipynb
+.. _`Document Loader`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/docs/document_loader.ipynb
 
 Chat Message History Usage
 --------------------------
@@ -130,7 +130,7 @@ history to LLMs.
 
 See the full `Chat Message History`_ tutorial.
 
-.. _`Chat Message History`: https://github.com/googleapis/langchain-google-cloud-sql-mysql/docs/chat_message_history.ipynb
+.. _`Chat Message History`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/docs/chat_message_history.ipynb
 
 Contributions
 ~~~~~~~~~~~~~
@@ -144,14 +144,13 @@ this project you agree to abide by its terms. See `Code of Conduct`_ for more
 information.
 
 .. _`CONTRIBUTING`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/CONTRIBUTING.md
-.. _`Code of Conduct`: https://github.com/googleapis/langchain-google-cloud-sql-mysql/tree/main/CODE_OF_CONDUCT.md
-
+.. _`Code of Conduct`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/CODE_OF_CONDUCT.md
 
 License
 -------
 
 Apache 2.0 - See
-`LICENSE <https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/tree/main/LICENSE>`_
+`LICENSE <https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/LICENSE>`_
 for more information.
 
 Disclaimer
