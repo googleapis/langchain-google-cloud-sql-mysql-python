@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.1...v0.2.2) (2024-04-30)
+
+
+### Documentation
+
+* Add API reference docs ([#71](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/71)) ([7b39d29](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/7b39d29f0e20e47f15d2167af73fce71f4fb9e18))
+* Add example workflow to vector store doc ([#67](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/67)) ([fadfc41](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/fadfc41d0f3c907262f2c3936205cf68204c3909))
+
 ## [0.2.1](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.0...v0.2.1) (2024-04-15)
 
 
