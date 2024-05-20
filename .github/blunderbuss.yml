@@ -1,0 +1,4 @@
+assign_issues:
+  - googleapis/langchain-csql-mysql
+assign_prs:
+  - googleapis/langchain-csql-mysql
