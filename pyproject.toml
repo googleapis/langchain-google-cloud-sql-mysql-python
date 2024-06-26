@@ -13,7 +13,7 @@ dependencies = [
     "langchain-community>=0.0.18, <1.0.0",
     "numpy>=1.24.4, <2.0.0",
     "SQLAlchemy>=2.0.7, <3.0.0",
-    "cloud-sql-python-connector[pymysql]>=1.7.0, <2.0.0"
+    "cloud-sql-python-connector[pymysql]>=1.10.0, <2.0.0"
 ]
 
 classifiers = [
