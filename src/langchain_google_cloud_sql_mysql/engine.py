@@ -21,7 +21,7 @@ import google.auth
 import google.auth.transport.requests
 import requests
 import sqlalchemy
-from google.cloud.sql.connector import Connector
+from google.cloud.sql.connector import Connector, RefreshStrategy
 
 from .version import __version__
 
@@ -193,7 +193,9 @@ class MySQLEngine:
             enable_iam_auth = True
 
         if cls._connector is None:
-            cls._connector = Connector(user_agent=USER_AGENT)
+            cls._connector = Connector(
+                user_agent=USER_AGENT, refresh_strategy=RefreshStrategy.LAZY
+            )
 
         # anonymous function to be used for SQLAlchemy 'creator' argument
         def getconn() -> pymysql.Connection:
