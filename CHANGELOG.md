@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.2...v0.2.3) (2024-07-03)
+
+
+### Bug Fixes
+
+* Use lazy refresh for Cloud SQL Connector ([#86](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/86)) ([58591d5](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/58591d564255217f00582eabd12a1183b089f5e3))
+
 ## [0.2.2](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.1...v0.2.2) (2024-04-30)
 
 
