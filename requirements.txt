@@ -1,5 +1,5 @@
 langchain==0.2.5
-langchain-community==0.2.5
+langchain-community==0.2.9
 numpy===1.24.4; python_version <= "3.8"
 numpy==1.26.4; python_version > "3.8"
 SQLAlchemy==2.0.31
