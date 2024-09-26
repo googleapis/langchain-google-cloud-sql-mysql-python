@@ -1,6 +1,6 @@
-langchain==0.2.11
-langchain-community==0.2.9
+langchain==0.3.1
+langchain-community==0.3.1
 numpy==1.26.4
-SQLAlchemy==2.0.31
-cloud-sql-python-connector[pymysql]==1.11.0
+SQLAlchemy==2.0.35
+cloud-sql-python-connector[pymysql]==1.12.1
 
