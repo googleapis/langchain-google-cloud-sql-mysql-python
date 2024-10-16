@@ -15,12 +15,14 @@
 # TODO: Remove below import when minimum supported Python version is 3.10
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 import google.auth
 import google.auth.transport.requests
 import requests
 import sqlalchemy
+from sqlalchemy.engine.row import RowMapping
+
 from google.cloud.sql.connector import Connector, RefreshStrategy
 
 from .version import __version__
@@ -235,7 +237,7 @@ class MySQLEngine:
             conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             conn.execute(sqlalchemy.text(query), params)
 
-    def _fetch(self, query: str, params: Optional[dict] = None):
+    def _fetch(self, query: str, params: Optional[dict] = None) -> Sequence[RowMapping]:
         """Fetch results from a SQL query."""
         with self.engine.connect() as conn:
             result = conn.execute(sqlalchemy.text(query), params)
@@ -243,7 +245,9 @@ class MySQLEngine:
             result_fetch = result_map.fetchall()
             return result_fetch
 
-    def _fetch_rows(self, query: str, params: Optional[dict] = None):
+    def _fetch_rows(
+        self, query: str, params: Optional[dict] = None
+    ) -> Sequence[RowMapping]:
         """Fetch results from a SQL query as rows."""
         with self.engine.connect() as conn:
             result = conn.execute(sqlalchemy.text(query), params)

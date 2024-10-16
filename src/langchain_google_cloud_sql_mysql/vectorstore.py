@@ -234,7 +234,7 @@ class MySQLVectorStore(VectorStore):
         self.engine._execute(query)
         return True
 
-    def apply_vector_index(self, vector_index: VectorIndex):
+    def apply_vector_index(self, vector_index: VectorIndex) -> None:
         # Construct the default index name
         if not vector_index.name:
             vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
@@ -243,7 +243,7 @@ class MySQLVectorStore(VectorStore):
         # After applying an index to the table, set the query option search type to be ANN
         self.query_options.search_type = SearchType.ANN
 
-    def alter_vector_index(self, vector_index: VectorIndex):
+    def alter_vector_index(self, vector_index: VectorIndex) -> None:
         existing_index_name = self._get_vector_index_name()
         if not existing_index_name:
             raise ValueError("No existing vector index found.")
@@ -258,7 +258,9 @@ class MySQLVectorStore(VectorStore):
         )
         self.__exec_apply_vector_index(query_template, vector_index)
 
-    def __exec_apply_vector_index(self, query_template: str, vector_index: VectorIndex):
+    def __exec_apply_vector_index(
+        self, query_template: str, vector_index: VectorIndex
+    ) -> None:
         index_options = []
         if vector_index.index_type:
             index_options.append(f"index_type={vector_index.index_type.value}")
@@ -275,7 +277,7 @@ class MySQLVectorStore(VectorStore):
         stmt = query_template.format(index_options_query)
         self.engine._execute_outside_tx(stmt)
 
-    def _get_vector_index_name(self):
+    def _get_vector_index_name(self) -> Optional[str]:
         query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
         result = self.engine._fetch(query)
         if result:
@@ -283,7 +285,7 @@ class MySQLVectorStore(VectorStore):
         else:
             return None
 
-    def drop_vector_index(self):
+    def drop_vector_index(self) -> Optional[str]:
         existing_index_name = self._get_vector_index_name()
         if existing_index_name:
             self.engine._execute_outside_tx(
