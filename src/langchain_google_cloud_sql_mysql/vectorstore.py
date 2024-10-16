@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Iterable, Optional, Type, Union
 
 import numpy as np
 from langchain_core.documents import Document
@@ -44,8 +44,8 @@ class MySQLVectorStore(VectorStore):
         table_name: str,
         content_column: str = "content",
         embedding_column: str = "embedding",
-        metadata_columns: List[str] = [],
-        ignore_metadata_columns: Optional[List[str]] = None,
+        metadata_columns: list[str] = [],
+        ignore_metadata_columns: Optional[list[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: Optional[str] = "langchain_metadata",
         k: int = 4,
@@ -60,8 +60,8 @@ class MySQLVectorStore(VectorStore):
             table_name (str): Name of an existing table or table to be created.
             content_column (str): Column that represent a Document's page_content. Defaults to "content".
             embedding_column (str): Column for embedding vectors. The embedding is generated from the document value. Defaults to "embedding".
-            metadata_columns (List[str]): Column(s) that represent a document's metadata.
-            ignore_metadata_columns (List[str]): Column(s) to ignore in pre-existing tables for a document's metadata. Can not be used with metadata_columns. Defaults to None.
+            metadata_columns (list[str]): Column(s) that represent a document's metadata.
+            ignore_metadata_columns (list[str]): Column(s) to ignore in pre-existing tables for a document's metadata. Can not be used with metadata_columns. Defaults to None.
             id_column (str): Column that represents the Document's id. Defaults to "langchain_id".
             metadata_json_column (str): Column to store metadata as JSON. Defaults to "langchain_metadata".
             k (int): The number of documents to return as the final result of a similarity search. Defaults to 4.
@@ -141,7 +141,7 @@ class MySQLVectorStore(VectorStore):
         result = self.engine._fetch("SELECT DATABASE();")
         return result[0]["DATABASE()"]
 
-    def __get_column_names(self) -> List[str]:
+    def __get_column_names(self) -> list[str]:
         results = self.engine._fetch(
             f"SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = '{self.db_name}' AND `TABLE_NAME` = '{self.table_name}'"
         )
@@ -150,11 +150,11 @@ class MySQLVectorStore(VectorStore):
     def _add_embeddings(
         self,
         texts: Iterable[str],
-        embeddings: List[List[float]],
-        metadatas: Optional[List[dict]] = None,
-        ids: Optional[List[str]] = None,
+        embeddings: list[list[float]],
+        metadatas: Optional[list[dict]] = None,
+        ids: Optional[list[str]] = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         if not ids:
             ids = ["NULL" for _ in texts]
         if not metadatas:
@@ -198,10 +198,10 @@ class MySQLVectorStore(VectorStore):
     def add_texts(
         self,
         texts: Iterable[str],
-        metadatas: Optional[List[dict]] = None,
-        ids: Optional[List[str]] = None,
+        metadatas: Optional[list[dict]] = None,
+        ids: Optional[list[str]] = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         embeddings = self.embedding_service.embed_documents(list(texts))
         ids = self._add_embeddings(
             texts, embeddings, metadatas=metadatas, ids=ids, **kwargs
@@ -210,10 +210,10 @@ class MySQLVectorStore(VectorStore):
 
     def add_documents(
         self,
-        documents: List[Document],
-        ids: Optional[List[str]] = None,
+        documents: list[Document],
+        ids: Optional[list[str]] = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
         ids = self.add_texts(texts, metadatas=metadatas, ids=ids, **kwargs)
@@ -221,7 +221,7 @@ class MySQLVectorStore(VectorStore):
 
     def delete(
         self,
-        ids: Optional[List[str]] = None,
+        ids: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> bool:
         if not ids:
@@ -297,16 +297,16 @@ class MySQLVectorStore(VectorStore):
     @classmethod
     def from_texts(  # type: ignore[override]
         cls: Type[MySQLVectorStore],
-        texts: List[str],
+        texts: list[str],
         embedding: Embeddings,
         engine: MySQLEngine,
         table_name: str,
-        metadatas: Optional[List[dict]] = None,
-        ids: Optional[List[str]] = None,
+        metadatas: Optional[list[dict]] = None,
+        ids: Optional[list[str]] = None,
         content_column: str = "content",
         embedding_column: str = "embedding",
-        metadata_columns: List[str] = [],
-        ignore_metadata_columns: Optional[List[str]] = None,
+        metadata_columns: list[str] = [],
+        ignore_metadata_columns: Optional[list[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
         query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
@@ -330,15 +330,15 @@ class MySQLVectorStore(VectorStore):
     @classmethod
     def from_documents(  # type: ignore[override]
         cls: Type[MySQLVectorStore],
-        documents: List[Document],
+        documents: list[Document],
         embedding: Embeddings,
         engine: MySQLEngine,
         table_name: str,
-        ids: Optional[List[str]] = None,
+        ids: Optional[list[str]] = None,
         content_column: str = "content",
         embedding_column: str = "embedding",
-        metadata_columns: List[str] = [],
-        ignore_metadata_columns: Optional[List[str]] = None,
+        metadata_columns: list[str] = [],
+        ignore_metadata_columns: Optional[list[str]] = None,
         id_column: str = "langchain_id",
         metadata_json_column: str = "langchain_metadata",
         query_options: QueryOptions = DEFAULT_QUERY_OPTIONS,
@@ -367,7 +367,7 @@ class MySQLVectorStore(VectorStore):
         k: Optional[int] = None,
         filter: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Searches for similar documents based on a text query.
 
         Args:
@@ -387,12 +387,12 @@ class MySQLVectorStore(VectorStore):
 
     def similarity_search_by_vector(
         self,
-        embedding: List[float],
+        embedding: list[float],
         k: Optional[int] = None,
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Searches for similar documents based on a vector embedding.
 
         Args:
@@ -422,7 +422,7 @@ class MySQLVectorStore(VectorStore):
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Tuple[Document, float]]:
+    ) -> list[tuple[Document, float]]:
         """Searches for similar documents based on a text query and returns their scores.
 
         Args:
@@ -447,12 +447,12 @@ class MySQLVectorStore(VectorStore):
 
     def similarity_search_with_score_by_vector(
         self,
-        embedding: List[float],
+        embedding: list[float],
         k: Optional[int] = None,
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Tuple[Document, float]]:
+    ) -> list[tuple[Document, float]]:
         """Searches for similar documents based on a vector embedding and returns their scores.
 
         Args:
@@ -507,7 +507,7 @@ class MySQLVectorStore(VectorStore):
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Performs Maximal Marginal Relevance (MMR) search based on a text query.
 
         Args:
@@ -536,14 +536,14 @@ class MySQLVectorStore(VectorStore):
 
     def max_marginal_relevance_search_by_vector(
         self,
-        embedding: List[float],
+        embedding: list[float],
         k: Optional[int] = None,
         fetch_k: Optional[int] = None,
         lambda_mult: Optional[float] = None,
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Performs Maximal Marginal Relevance (MMR) search based on a vector embedding.
 
         Args:
@@ -572,14 +572,14 @@ class MySQLVectorStore(VectorStore):
 
     def max_marginal_relevance_search_with_score_by_vector(
         self,
-        embedding: List[float],
+        embedding: list[float],
         k: Optional[int] = None,
         fetch_k: Optional[int] = None,
         lambda_mult: Optional[float] = None,
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         **kwargs: Any,
-    ) -> List[Tuple[Document, float]]:
+    ) -> list[tuple[Document, float]]:
         """Performs Maximal Marginal Relevance (MMR) search based on a vector embedding and returns documents with scores.
 
         Args:
@@ -639,12 +639,12 @@ class MySQLVectorStore(VectorStore):
 
     def _query_collection(
         self,
-        embedding: List[float],
+        embedding: list[float],
         k: Optional[int] = None,
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         map_results: Optional[bool] = True,
-    ) -> List[Any]:
+    ) -> list[Any]:
         column_names = self.__get_column_names()
         # Apply vector_to_string to the embedding_column
         for i, v in enumerate(column_names):
@@ -682,7 +682,7 @@ class MySQLVectorStore(VectorStore):
 
 ### The following is copied from langchain-community until it's moved into core
 
-Matrix = Union[List[List[float]], List[np.ndarray], np.ndarray]
+Matrix = Union[list[list[float]], list[np.ndarray], np.ndarray]
 
 
 def maximal_marginal_relevance(
@@ -690,7 +690,7 @@ def maximal_marginal_relevance(
     embedding_list: list,
     lambda_mult: float = 0.5,
     k: int = 4,
-) -> List[int]:
+) -> list[int]:
     """Calculate maximal marginal relevance."""
     if min(k, len(embedding_list)) <= 0:
         return []
