@@ -44,7 +44,7 @@ With `virtualenv`_, it’s possible to install this library without needing syst
 Supported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Python >= 3.8
+Python >= 3.9
 
 Mac/Linux
 ^^^^^^^^^
@@ -112,7 +112,7 @@ See the full `Document Loader`_ tutorial.
 .. _`Document Loader`: https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/blob/main/docs/document_loader.ipynb
 
 Chat Message History Usage
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``ChatMessageHistory`` to store messages and provide conversation
 history to LLMs.
