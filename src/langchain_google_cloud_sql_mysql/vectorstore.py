@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence, Type, Union
 
 import numpy as np
 from langchain_core.documents import Document
@@ -32,6 +32,9 @@ from .indexes import (
     VectorIndex,
 )
 from .loader import _parse_doc_from_row
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine.row import Row, RowMapping
 
 DEFAULT_INDEX_NAME_SUFFIX = "langchainvectorindex"
 
@@ -644,7 +647,7 @@ class MySQLVectorStore(VectorStore):
         filter: Optional[str] = None,
         query_options: Optional[QueryOptions] = None,
         map_results: Optional[bool] = True,
-    ) -> list[Any]:
+    ) -> Union[Sequence[Row], Sequence[RowMapping]]:
         column_names = self.__get_column_names()
         # Apply vector_to_string to the embedding_column
         for i, v in enumerate(column_names):
@@ -673,7 +676,6 @@ class MySQLVectorStore(VectorStore):
             )
             stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
 
-        # return self.engine._fetch(stmt)
         if map_results:
             return self.engine._fetch(stmt)
         else:
