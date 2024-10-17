@@ -21,9 +21,8 @@ import google.auth
 import google.auth.transport.requests
 import requests
 import sqlalchemy
-from sqlalchemy.engine.row import RowMapping
-
 from google.cloud.sql.connector import Connector, RefreshStrategy
+from sqlalchemy.engine.row import RowMapping
 
 from .version import __version__
 
