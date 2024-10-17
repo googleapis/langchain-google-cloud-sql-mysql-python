@@ -22,7 +22,7 @@ import google.auth.transport.requests
 import requests
 import sqlalchemy
 from google.cloud.sql.connector import Connector, RefreshStrategy
-from sqlalchemy.engine.row import RowMapping
+from sqlalchemy.engine.row import Row, RowMapping
 
 from .version import __version__
 
@@ -244,9 +244,7 @@ class MySQLEngine:
             result_fetch = result_map.fetchall()
             return result_fetch
 
-    def _fetch_rows(
-        self, query: str, params: Optional[dict] = None
-    ) -> Sequence[RowMapping]:
+    def _fetch_rows(self, query: str, params: Optional[dict] = None) -> Sequence[Row]:
         """Fetch results from a SQL query as rows."""
         with self.engine.connect() as conn:
             result = conn.execute(sqlalchemy.text(query), params)
