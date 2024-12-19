@@ -32,7 +32,7 @@ steps:
 .. _Setup Authentication.: https://googleapis.dev/python/google-api-core/latest/auth.html
 
 Supported Cloud SQL Maintenance Versions
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This LangChain integration is only supported for Cloud SQL maintenance versions between **MYSQL_8_0_36.R20240401.03_00** and **MYSQL_8_0_36.R20241208.01_00**
 
