@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from typing import Any, Dict, Iterable, Iterator, List, Optional, cast
+from typing import Any, Iterable, Iterator, Optional, cast
 
 import pymysql
 import sqlalchemy
@@ -28,13 +28,13 @@ DEFAULT_METADATA_COL = "langchain_metadata"
 def _parse_doc_from_row(
     content_columns: Iterable[str],
     metadata_columns: Iterable[str],
-    row: Dict,
+    row: dict,
     metadata_json_column: Optional[str] = DEFAULT_METADATA_COL,
 ) -> Document:
     page_content = " ".join(
         str(row[column]) for column in content_columns if column in row
     )
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, Any] = {}
     # unnest metadata from langchain_metadata column
     if row.get(metadata_json_column):
         for k, v in row[metadata_json_column].items():
@@ -51,9 +51,9 @@ def _parse_row_from_doc(
     doc: Document,
     content_column: str = DEFAULT_CONTENT_COL,
     metadata_json_column: str = DEFAULT_METADATA_COL,
-) -> Dict:
+) -> dict:
     doc_metadata = doc.metadata.copy()
-    row: Dict[str, Any] = {content_column: doc.page_content}
+    row: dict[str, Any] = {content_column: doc.page_content}
     for entry in doc.metadata:
         if entry in column_names:
             row[entry] = doc_metadata[entry]
@@ -72,8 +72,8 @@ class MySQLLoader(BaseLoader):
         engine: MySQLEngine,
         table_name: str = "",
         query: str = "",
-        content_columns: Optional[List[str]] = None,
-        metadata_columns: Optional[List[str]] = None,
+        content_columns: Optional[list[str]] = None,
+        metadata_columns: Optional[list[str]] = None,
         metadata_json_column: Optional[str] = None,
     ):
         """
@@ -89,9 +89,9 @@ class MySQLLoader(BaseLoader):
           engine (MySQLEngine): MySQLEngine object to connect to the MySQL database.
           table_name (str): The MySQL database table name. (OneOf: table_name, query).
           query (str): The query to execute in MySQL format.  (OneOf: table_name, query).
-          content_columns (List[str]): The columns to write into the `page_content`
+          content_columns (list[str]): The columns to write into the `page_content`
              of the document. Optional.
-          metadata_columns (List[str]): The columns to write into the `metadata` of the document.
+          metadata_columns (list[str]): The columns to write into the `metadata` of the document.
              Optional.
           metadata_json_column (str): The name of the JSON column to use as the metadata’s base
             dictionary. Default: `langchain_metadata`. Optional.
@@ -110,12 +110,12 @@ class MySQLLoader(BaseLoader):
                 "entire table or 'query' to load a specific query."
             )
 
-    def load(self) -> List[Document]:
+    def load(self) -> list[Document]:
         """
         Load langchain documents from a Cloud SQL MySQL database.
 
         Returns:
-            (List[langchain_core.documents.Document]): a list of Documents with metadata from
+            (list[langchain_core.documents.Document]): a list of Documents with metadata from
                 specific columns.
         """
         return list(self.lazy_load())
@@ -231,13 +231,13 @@ class MySQLDocumentSaver:
             )
         self.metadata_json_column = metadata_json_column or DEFAULT_METADATA_COL
 
-    def add_documents(self, docs: List[Document]) -> None:
+    def add_documents(self, docs: list[Document]) -> None:
         """
         Save documents in the DocumentSaver table. Document’s metadata is added to columns if found or
         stored in langchain_metadata JSON column.
 
         Args:
-            docs (List[langchain_core.documents.Document]): a list of documents to be saved.
+            docs (list[langchain_core.documents.Document]): a list of documents to be saved.
         """
         with self.engine.connect() as conn:
             for doc in docs:
@@ -250,13 +250,13 @@ class MySQLDocumentSaver:
                 conn.execute(sqlalchemy.insert(self._table).values(row))
             conn.commit()
 
-    def delete(self, docs: List[Document]) -> None:
+    def delete(self, docs: list[Document]) -> None:
         """
         Delete all instances of a document from the DocumentSaver table by matching the entire Document
         object.
 
         Args:
-            docs (List[langchain_core.documents.Document]): a list of documents to be deleted.
+            docs (list[langchain_core.documents.Document]): a list of documents to be deleted.
         """
         with self.engine.connect() as conn:
             for doc in docs:
