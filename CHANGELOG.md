@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.3...v0.3.0) (2025-01-06)
+
+
+### Features
+
+* Remove support for Python 3.8 ([#97](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/97)) ([ba02bf5](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/ba02bf528830dafb599afae43bd1bf3b2ac7c493))
+
+
+### Documentation
+
+* Update README to reflect supported maintenance version ([#104](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/104)) ([3ac0aab](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/3ac0aabe6b242b6131f1fe0eb3c368ffbcc04a97))
+
 ## [0.2.3](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.2...v0.2.3) (2024-07-03)
 
 
