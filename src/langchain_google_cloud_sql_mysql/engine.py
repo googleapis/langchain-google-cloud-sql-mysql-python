@@ -15,13 +15,14 @@
 # TODO: Remove below import when minimum supported Python version is 3.10
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import google.auth
 import google.auth.transport.requests
 import requests
 import sqlalchemy
 from google.cloud.sql.connector import Connector, RefreshStrategy
+from sqlalchemy.engine.row import Row, RowMapping
 
 from .version import __version__
 
@@ -75,7 +76,7 @@ def _get_iam_principal_email(
     url = f"https://oauth2.googleapis.com/tokeninfo?access_token={credentials.token}"
     response = requests.get(url)
     response.raise_for_status()
-    response_json: Dict = response.json()
+    response_json: dict = response.json()
     email = response_json.get("email")
     if email is None:
         raise ValueError(
@@ -235,7 +236,7 @@ class MySQLEngine:
             conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             conn.execute(sqlalchemy.text(query), params)
 
-    def _fetch(self, query: str, params: Optional[dict] = None):
+    def _fetch(self, query: str, params: Optional[dict] = None) -> Sequence[RowMapping]:
         """Fetch results from a SQL query."""
         with self.engine.connect() as conn:
             result = conn.execute(sqlalchemy.text(query), params)
@@ -243,7 +244,7 @@ class MySQLEngine:
             result_fetch = result_map.fetchall()
             return result_fetch
 
-    def _fetch_rows(self, query: str, params: Optional[dict] = None):
+    def _fetch_rows(self, query: str, params: Optional[dict] = None) -> Sequence[Row]:
         """Fetch results from a SQL query as rows."""
         with self.engine.connect() as conn:
             result = conn.execute(sqlalchemy.text(query), params)
@@ -283,7 +284,7 @@ class MySQLEngine:
     def init_document_table(
         self,
         table_name: str,
-        metadata_columns: List[sqlalchemy.Column] = [],
+        metadata_columns: list[sqlalchemy.Column] = [],
         content_column: str = "page_content",
         metadata_json_column: Optional[str] = "langchain_metadata",
         overwrite_existing: bool = False,
@@ -293,7 +294,7 @@ class MySQLEngine:
 
         Args:
             table_name (str): The MySQL database table name.
-            metadata_columns (List[sqlalchemy.Column]): A list of SQLAlchemy Columns
+            metadata_columns (list[sqlalchemy.Column]): A list of SQLAlchemy Columns
                 to create for custom metadata. Optional.
             content_column (str): The column to store document content.
                 Deafult: `page_content`.
@@ -347,7 +348,7 @@ class MySQLEngine:
         vector_size: int,
         content_column: str = "content",
         embedding_column: str = "embedding",
-        metadata_columns: List[Column] = [],
+        metadata_columns: list[Column] = [],
         metadata_json_column: str = "langchain_metadata",
         id_column: str = "langchain_id",
         overwrite_existing: bool = False,
@@ -363,7 +364,7 @@ class MySQLEngine:
                 Default: `page_content`.
             embedding_column (str) : Name of the column to store vector embeddings.
                 Default: `embedding`.
-            metadata_columns (List[Column]): A list of Columns to create for custom
+            metadata_columns (list[Column]): A list of Columns to create for custom
                 metadata. Default: []. Optional.
             metadata_json_column (str): The column to store extra metadata in JSON format.
                 Default: `langchain_metadata`. Optional.

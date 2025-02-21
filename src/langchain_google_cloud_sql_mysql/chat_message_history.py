@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from typing import List
 
 import sqlalchemy
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -78,7 +77,7 @@ class MySQLChatMessageHistory(BaseChatMessageHistory):
             )
 
     @property
-    def messages(self) -> List[BaseMessage]:  # type: ignore
+    def messages(self) -> list[BaseMessage]:  # type: ignore
         """Retrieve the messages from Cloud SQL"""
         query = f"SELECT data, type FROM `{self.table_name}` WHERE session_id = :session_id ORDER BY id;"
         with self.engine.connect() as conn:
