@@ -1,4 +1,4 @@
 assign_issues:
-  - googleapis/langchain-csql-mysql
+  - googleapis/langchain-csql-mysql-team
 assign_prs:
-  - googleapis/langchain-csql-mysql
+  - googleapis/langchain-csql-mysql-team
