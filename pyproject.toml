@@ -63,7 +63,11 @@ exclude = [
 ]
 
 [[tool.mypy.overrides]]
-module="google.auth.*"
+module = [
+    "google.auth.*",
+    "requests.*",
+    "pymysql.*"
+]
 ignore_missing_imports = true
 
 
