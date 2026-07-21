@@ -227,11 +227,17 @@ class MySQLVectorStore(VectorStore):
         if not ids:
             return False
 
-        id_list = ", ".join([f"'{id}'" for id in ids])
+        bind_params = {}
+        param_names = []
+        for i, id_val in enumerate(ids):
+            param_name = f"id_{i}"
+            bind_params[param_name] = id_val
+            param_names.append(f":{param_name}")
+        id_list = ", ".join(param_names)
         query = (
             f"DELETE FROM `{self.table_name}` WHERE `{self.id_column}` in ({id_list})"
         )
-        self.engine._execute(query)
+        self.engine._execute(query, bind_params)
         return True
 
     def apply_vector_index(self, vector_index: VectorIndex):
@@ -659,9 +665,10 @@ class MySQLVectorStore(VectorStore):
             if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
             else query_options.distance_measure.value
         )
+        bind_params = {"embedding": str(embedding)}
         if query_options.search_type == SearchType.KNN:
             filter = f"WHERE {filter}" if filter else ""
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
         else:
             filter = f"AND {filter}" if filter else ""
             num_partitions = (
@@ -669,13 +676,13 @@ class MySQLVectorStore(VectorStore):
                 if query_options.num_partitions
                 else ""
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector(:embedding), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
 
         # return self.engine._fetch(stmt)
         if map_results:
-            return self.engine._fetch(stmt)
+            return self.engine._fetch(stmt, bind_params)
         else:
-            return self.engine._fetch_rows(stmt)
+            return self.engine._fetch_rows(stmt, bind_params)
 
 
 ### The following is copied from langchain-community until it's moved into core
