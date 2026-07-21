@@ -227,8 +227,8 @@ class MySQLVectorStore(VectorStore):
         if not ids:
             return False
 
-        bind_params = {}
-        param_names = []
+        bind_params: Dict[str, Any] = {}
+        param_names: List[str] = []
         for i, id_val in enumerate(ids):
             param_name = f"id_{i}"
             bind_params[param_name] = id_val
@@ -665,7 +665,7 @@ class MySQLVectorStore(VectorStore):
             if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
             else query_options.distance_measure.value
         )
-        bind_params = {"embedding": str(embedding)}
+        bind_params: Dict[str, Any] = {"embedding": str(embedding)}
         if query_options.search_type == SearchType.KNN:
             filter = f"WHERE {filter}" if filter else ""
             stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
