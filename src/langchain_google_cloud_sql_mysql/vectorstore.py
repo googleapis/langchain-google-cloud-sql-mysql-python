@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from langchain_core.documents import Document
