@@ -281,13 +281,18 @@ class MySQLVectorStore(VectorStore):
         stmt = query_template.format(index_options_query)
         self.engine._execute_outside_tx(stmt)
 
-    def _get_vector_index_name(self):
+    def _get_vector_index_name(self) -> Optional[str]:
         query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
-        result = self.engine._fetch(query)
-        if result:
-            return result[0]["index_name"]
-        else:
-            return None
+        try:
+            result = self.engine._fetch(query)
+            if result:
+                return result[0]["index_name"]
+            else:
+                return None
+        except Exception as e:
+            if "doesn't exist" in str(e) and "mysql.vector_indexes" in str(e):
+                return None
+            raise
 
     def drop_vector_index(self):
         existing_index_name = self._get_vector_index_name()
@@ -731,25 +736,25 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
 
     X = np.array(X)
     Y = np.array(Y)
-    if X.shape[1] != Y.shape[1]:
+    if X.shape[1] != Y.shape[1]:  # type: ignore
         raise ValueError(
-            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
-            f"and Y has shape {Y.shape}."
+            f"Number of columns in X and Y must be the same. X has shape {X.shape} "  # type: ignore
+            f"and Y has shape {Y.shape}."  # type: ignore
         )
     try:
         import simsimd as simd  # type: ignore
 
         X = np.array(X, dtype=np.float32)
         Y = np.array(Y, dtype=np.float32)
-        Z = 1 - simd.cdist(X, Y, metric="cosine")
+        Z = 1 - simd.cdist(X, Y, metric="cosine")  # type: ignore
         if isinstance(Z, float):
             return np.array([Z])
-        return Z
+        return Z  # type: ignore
     except ImportError:
         X_norm = np.linalg.norm(X, axis=1)
         Y_norm = np.linalg.norm(Y, axis=1)
         # Ignore divide by zero errors run time warnings as those are handled below.
         with np.errstate(divide="ignore", invalid="ignore"):
-            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)
+            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)  # type: ignore
         similarity[np.isnan(similarity) | np.isinf(similarity)] = 0.0
         return similarity
