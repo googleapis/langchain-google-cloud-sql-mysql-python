@@ -281,18 +281,16 @@ class MySQLVectorStore(VectorStore):
         stmt = query_template.format(index_options_query)
         self.engine._execute_outside_tx(stmt)
 
-    def _get_vector_index_name(self) -> Optional[str]:
-        query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
-        try:
-            result = self.engine._fetch(query)
-            if result:
-                return result[0]["index_name"]
-            else:
-                return None
-        except Exception as e:
-            if "doesn't exist" in str(e) and "mysql.vector_indexes" in str(e):
-                return None
-            raise
+    def _get_vector_index_name(self):
+        query = "SELECT index_name FROM mysql.vector_indexes WHERE table_name=:table_name;"
+        result = self.engine._fetch(
+            query,
+            params={"table_name": f"{self.db_name}.{self.table_name}"}
+        )
+        if result:
+            return result[0]["index_name"]
+        else:
+            return None
 
     def drop_vector_index(self):
         existing_index_name = self._get_vector_index_name()
