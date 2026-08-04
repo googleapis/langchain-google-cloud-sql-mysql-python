@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from langchain_core.documents import Document
@@ -227,11 +227,17 @@ class MySQLVectorStore(VectorStore):
         if not ids:
             return False
 
-        id_list = ", ".join([f"'{id}'" for id in ids])
+        bind_params: Dict[str, Any] = {}
+        param_names: List[str] = []
+        for i, id_val in enumerate(ids):
+            param_name = f"id_{i}"
+            bind_params[param_name] = id_val
+            param_names.append(f":{param_name}")
+        id_list = ", ".join(param_names)
         query = (
             f"DELETE FROM `{self.table_name}` WHERE `{self.id_column}` in ({id_list})"
         )
-        self.engine._execute(query)
+        self.engine._execute(query, bind_params)
         return True
 
     def apply_vector_index(self, vector_index: VectorIndex):
@@ -276,8 +282,11 @@ class MySQLVectorStore(VectorStore):
         self.engine._execute_outside_tx(stmt)
 
     def _get_vector_index_name(self):
-        query = f"SELECT index_name FROM mysql.vector_indexes WHERE table_name='{self.db_name}.{self.table_name}';"
-        result = self.engine._fetch(query)
+        query = "SELECT index_name FROM mysql.vector_indexes WHERE table_name=:table_name;"
+        result = self.engine._fetch(
+            query,
+            params={"table_name": f"{self.db_name}.{self.table_name}"}
+        )
         if result:
             return result[0]["index_name"]
         else:
@@ -659,9 +668,10 @@ class MySQLVectorStore(VectorStore):
             if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
             else query_options.distance_measure.value
         )
+        bind_params: Dict[str, Any] = {"embedding": str(embedding)}
         if query_options.search_type == SearchType.KNN:
             filter = f"WHERE {filter}" if filter else ""
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
         else:
             filter = f"AND {filter}" if filter else ""
             num_partitions = (
@@ -669,13 +679,13 @@ class MySQLVectorStore(VectorStore):
                 if query_options.num_partitions
                 else ""
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector('{embedding}'), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector(:embedding), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
 
         # return self.engine._fetch(stmt)
         if map_results:
-            return self.engine._fetch(stmt)
+            return self.engine._fetch(stmt, bind_params)
         else:
-            return self.engine._fetch_rows(stmt)
+            return self.engine._fetch_rows(stmt, bind_params)
 
 
 ### The following is copied from langchain-community until it's moved into core
@@ -724,25 +734,25 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
 
     X = np.array(X)
     Y = np.array(Y)
-    if X.shape[1] != Y.shape[1]:
+    if X.shape[1] != Y.shape[1]:  # type: ignore
         raise ValueError(
-            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
-            f"and Y has shape {Y.shape}."
+            f"Number of columns in X and Y must be the same. X has shape {X.shape} "  # type: ignore
+            f"and Y has shape {Y.shape}."  # type: ignore
         )
     try:
         import simsimd as simd  # type: ignore
 
         X = np.array(X, dtype=np.float32)
         Y = np.array(Y, dtype=np.float32)
-        Z = 1 - simd.cdist(X, Y, metric="cosine")
+        Z = 1 - simd.cdist(X, Y, metric="cosine")  # type: ignore
         if isinstance(Z, float):
             return np.array([Z])
-        return Z
+        return Z  # type: ignore
     except ImportError:
         X_norm = np.linalg.norm(X, axis=1)
         Y_norm = np.linalg.norm(Y, axis=1)
         # Ignore divide by zero errors run time warnings as those are handled below.
         with np.errstate(divide="ignore", invalid="ignore"):
-            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)
+            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)  # type: ignore
         similarity[np.isnan(similarity) | np.isinf(similarity)] = 0.0
         return similarity
