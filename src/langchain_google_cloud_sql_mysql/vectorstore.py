@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -27,6 +28,7 @@ from .engine import MySQLEngine
 from .indexes import (
     DEFAULT_QUERY_OPTIONS,
     DistanceMeasure,
+    IndexType,
     QueryOptions,
     SearchType,
     VectorIndex,
@@ -244,42 +246,51 @@ class MySQLVectorStore(VectorStore):
         # Construct the default index name
         if not vector_index.name:
             vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
-        query_template = f"CALL mysql.create_vector_index('{vector_index.name}', '{self.db_name}.{self.table_name}', '{self.embedding_column}', '{{}}');"
-        self.__exec_apply_vector_index(query_template, vector_index)
+        index_name = (
+            vector_index.name.split(".")[1]
+            if "." in vector_index.name
+            else vector_index.name
+        )
+
+        distance_measure = (
+            vector_index.distance_measure
+            or self.query_options.distance_measure
+            or DistanceMeasure.L2_SQUARED
+        )
+
+        options = ["QUANTIZER=SQ8", f"DISTANCE_MEASURE={distance_measure.value}"]
+        if vector_index.num_partitions:
+            options.append(f"NUM_LEAVES={vector_index.num_partitions}")
+
+        options_str = " ".join(options)
+        stmt = f"CREATE VECTOR INDEX `{index_name}` ON `{self.table_name}` (`{self.embedding_column}`) USING SCANN {options_str};"
+        self.engine._execute_outside_tx(stmt)
         # After applying an index to the table, set the query option search type to be ANN
         self.query_options.search_type = SearchType.ANN
+        self.query_options.distance_measure = distance_measure
 
     def alter_vector_index(self, vector_index: VectorIndex):
         existing_index_name = self._get_vector_index_name()
         if not existing_index_name:
             raise ValueError("No existing vector index found.")
+        existing_short_name = (
+            existing_index_name.split(".")[1]
+            if "." in existing_index_name
+            else existing_index_name
+        )
         if not vector_index.name:
-            vector_index.name = existing_index_name.split(".")[1]
-        if existing_index_name.split(".")[1] != vector_index.name:
+            vector_index.name = existing_short_name
+        req_short_name = (
+            vector_index.name.split(".")[1]
+            if "." in vector_index.name
+            else vector_index.name
+        )
+        if existing_short_name != req_short_name:
             raise ValueError(
                 f"Existing index name {existing_index_name} does not match the new index name {vector_index.name}."
             )
-        query_template = (
-            f"CALL mysql.alter_vector_index('{existing_index_name}', '{{}}');"
-        )
-        self.__exec_apply_vector_index(query_template, vector_index)
-
-    def __exec_apply_vector_index(self, query_template: str, vector_index: VectorIndex):
-        index_options = []
-        if vector_index.index_type:
-            index_options.append(f"index_type={vector_index.index_type.value}")
-        if vector_index.distance_measure:
-            index_options.append(
-                f"distance_measure={vector_index.distance_measure.value}"
-            )
-        if vector_index.num_partitions:
-            index_options.append(f"num_partitions={vector_index.num_partitions}")
-        if vector_index.num_neighbors:
-            index_options.append(f"num_neighbors={vector_index.num_neighbors}")
-        index_options_query = ",".join(index_options)
-
-        stmt = query_template.format(index_options_query)
-        self.engine._execute_outside_tx(stmt)
+        self.drop_vector_index()
+        self.apply_vector_index(vector_index)
 
     def _get_vector_index_name(self):
         query = "SELECT index_name FROM mysql.vector_indexes WHERE table_name=:table_name;"
@@ -295,8 +306,13 @@ class MySQLVectorStore(VectorStore):
     def drop_vector_index(self):
         existing_index_name = self._get_vector_index_name()
         if existing_index_name:
+            index_name = (
+                existing_index_name.split(".")[1]
+                if "." in existing_index_name
+                else existing_index_name
+            )
             self.engine._execute_outside_tx(
-                f"CALL mysql.drop_vector_index('{existing_index_name}');"
+                f"DROP INDEX `{index_name}` ON `{self.table_name}`;"
             )
         self.query_options.search_type = SearchType.KNN
         return existing_index_name
@@ -662,24 +678,34 @@ class MySQLVectorStore(VectorStore):
         if query_options.num_partitions and query_options.search_type == SearchType.KNN:
             raise ValueError("num_partitions is not supported for the search type KNN")
 
-        k = k if k else query_options.num_neighbors
+        k = k if k is not None else query_options.num_neighbors
         distance_function = (
             f"{query_options.distance_measure.value}_distance"
             if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
             else query_options.distance_measure.value
         )
         bind_params: Dict[str, Any] = {"embedding": str(embedding)}
-        if query_options.search_type == SearchType.KNN:
-            filter = f"WHERE {filter}" if filter else ""
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
+
+        search_type = query_options.search_type
+        if search_type == SearchType.ANN:
+            if not k or k <= 0:
+                warnings.warn("A LIMIT is required for ANN search. Falling back to KNN search.")
+                search_type = SearchType.KNN
+            elif not query_options.distance_measure:
+                raise ValueError("Specifying the distance measure is required for ANN search.")
+
+        if search_type == SearchType.KNN:
+            where_clause = f"WHERE {filter}" if filter else ""
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {where_clause} ORDER BY distance LIMIT {k};"
         else:
-            filter = f"AND {filter}" if filter else ""
-            num_partitions = (
-                f",num_partitions={query_options.num_partitions}"
+            where_clause = f"WHERE {filter}" if filter else ""
+            num_leaves = (
+                f",num_leaves_to_search={query_options.num_partitions}"
                 if query_options.num_partitions
                 else ""
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector(:embedding), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+            ann_options = f"distance_measure={query_options.distance_measure.value}{num_leaves}"
+            stmt = f"SELECT {column_query}, APPROX_DISTANCE({self.embedding_column}, string_to_vector(:embedding), '{ann_options}') AS distance FROM `{self.table_name}` {where_clause} ORDER BY distance LIMIT {k};"
 
         # return self.engine._fetch(stmt)
         if map_results:
