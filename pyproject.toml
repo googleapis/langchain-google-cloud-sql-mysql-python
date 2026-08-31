@@ -9,7 +9,7 @@ authors = [
     {name = "Google LLC", email = "googleapis-packages@google.com"}
 ]
 dependencies = [
-    "langchain-core>=0.1.1, <1.0.0",
+    "langchain-core>=1.2.22, <1.2.23",
     "langchain-community>=0.0.18, <1.0.0",
     "numpy>=1.24.4, <2.0.0",
     "SQLAlchemy>=2.0.7, <3.0.0",
