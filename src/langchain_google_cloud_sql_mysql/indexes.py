@@ -48,12 +48,13 @@ class QueryOptions:
     """Holds configuration options for executing a search query.
 
     Attributes:
-        num_partitions (Optional[int]): The number of partitions to divide the search space into. None means default partitioning.
+        num_leaves_to_search (Optional[int]): The number of leaves to search in an ANN query. None means default.
         num_neighbors (int): The number of nearest neighbors to retrieve. Default to 10.
+        distance_measure (DistanceMeasure): The distance measure to use. Defaults to L2_SQUARED.
         search_type (SearchType): The type of search algorithm to use. Defaults to KNN.
     """
 
-    num_partitions: Optional[int] = None
+    num_leaves_to_search: Optional[int] = None
     num_neighbors: int = 10
     distance_measure: DistanceMeasure = DistanceMeasure.L2_SQUARED
     search_type: SearchType = SearchType.KNN
@@ -62,42 +63,22 @@ class QueryOptions:
 DEFAULT_QUERY_OPTIONS = QueryOptions()
 
 
-class IndexType(Enum):
-    """Defines the types of indexes that can be used for vector storage.
-
-    Attributes:
-        BRUTE_FORCE_SCAN: A simple brute force scan approach.
-        TREE_AH: A tree-based index, specifically Annoy (Approximate Nearest Neighbors Oh Yeah).
-        TREE_SQ: A tree-based index, specifically ScaNN (Scalable Nearest Neighbors).
-    """
-
-    BRUTE_FORCE_SCAN = "BRUTE_FORCE"
-    TREE_AH = "TREE_AH"
-    TREE_SQ = "TREE_SQ"
-
-
 class VectorIndex:
     """Represents a vector index for storing and querying vectors.
 
     Attributes:
         name (Optional[str]): The name of the index.
-        index_type (Optional[IndexType]): The type of index.
-        distance_measure (Optional[DistanceMeasure]): The distance measure to use for the index.
-        num_partitions (Optional[int]): The number of partitions for the index. None for default.
-        num_neighbors (Optional[int]): The default number of neighbors to return for queries.
+        distance_measure (DistanceMeasure): The distance measure to use for the index. Defaults to L2_SQUARED.
+        num_leaves (Optional[int]): The number of leaves (partitions) for the index. None for default.
     """
 
     def __init__(
         self,
         name: Optional[str] = None,
-        index_type: Optional[IndexType] = None,
-        distance_measure: Optional[DistanceMeasure] = None,
-        num_partitions: Optional[int] = None,
-        num_neighbors: Optional[int] = None,
+        distance_measure: DistanceMeasure = DistanceMeasure.L2_SQUARED,
+        num_leaves: Optional[int] = None,
     ):
         """Initializes a new instance of the VectorIndex class."""
         self.name = name
-        self.index_type = index_type
         self.distance_measure = distance_measure
-        self.num_partitions = num_partitions
-        self.num_neighbors = num_neighbors
+        self.num_leaves = num_leaves

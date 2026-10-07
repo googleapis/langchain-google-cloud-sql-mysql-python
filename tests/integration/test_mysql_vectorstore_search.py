@@ -20,7 +20,6 @@ from langchain_community.embeddings import DeterministicFakeEmbedding
 
 from langchain_google_cloud_sql_mysql import (
     DistanceMeasure,
-    IndexType,
     MySQLEngine,
     MySQLVectorStore,
     QueryOptions,
@@ -30,7 +29,7 @@ from langchain_google_cloud_sql_mysql import (
 
 TABLE_1000_ROWS = "test_table_1000_rows_search" + str(uuid.uuid4()).split("-")[0]
 VECTOR_SIZE = 8
-DEFAULT_INDEX = VectorIndex(index_type=IndexType.TREE_SQ)
+DEFAULT_INDEX = VectorIndex()
 
 embeddings_service = DeterministicFakeEmbedding(size=VECTOR_SIZE)
 
@@ -106,20 +105,25 @@ class TestVectorStoreFromMethods:
         engine._execute(f"DROP TABLE IF EXISTS `{TABLE_1000_ROWS}`")
 
     def test_search_query_collection_knn(self, vs_1000):
-        result = vs_1000._query_collection(self.apple_100_embedding, k=10)
+        result = vs_1000._query_collection(
+            self.apple_100_embedding,
+            k=10,
+            query_options=QueryOptions(search_type=SearchType.KNN),
+        )
         assert len(result) == 10
         assert result[0]["content"] == self.apple_100_text
 
     def test_search_query_collection_knn_with_filter(self, vs_1000):
-        vs_1000.drop_vector_index()
         result = vs_1000._query_collection(
-            self.apple_100_embedding, k=5, filter=f"content != '{self.apple_100_text}'"
+            self.apple_100_embedding,
+            k=5,
+            filter=f"content != '{self.apple_100_text}'",
+            query_options=QueryOptions(search_type=SearchType.KNN),
         )
         assert len(result) == 5
         assert result[0]["content"] == "apple_154"
 
     def test_search_query_collection_distance_measure(self, vs_1000):
-        vs_1000.apply_vector_index(DEFAULT_INDEX)
         for measure in [
             DistanceMeasure.COSINE,
             DistanceMeasure.DOT_PRODUCT,
@@ -132,21 +136,29 @@ class TestVectorStoreFromMethods:
                 )[0]["content"]
                 == self.apple_100_text
             )
-        vs_1000.drop_vector_index()
+            assert (
+                vs_1000._query_collection(
+                    self.apple_100_embedding,
+                    query_options=QueryOptions(
+                        distance_measure=measure, search_type=SearchType.ANN
+                    ),
+                )[0]["content"]
+                == self.apple_100_text
+            )
 
-    def test_search_raise_when_num_partitions_set_for_knn(self, vs_1000):
+    def test_search_raise_when_num_leaves_to_search_set_for_knn(self, vs_1000):
         with pytest.raises(
-            ValueError, match="num_partitions is not supported for the search type KNN"
+            ValueError,
+            match="num_leaves_to_search is not supported for the search type KNN",
         ):
             vs_1000._query_collection(
                 self.apple_100_embedding,
                 k=1,
                 filter="content != 'apple_100'",
-                query_options=QueryOptions(num_partitions=2),
+                query_options=QueryOptions(num_leaves_to_search=2),
             )
 
-    def test_query_collection_ann_with_different_index_types(self, vs_1000):
-        vs_1000.apply_vector_index(VectorIndex(index_type=IndexType.BRUTE_FORCE_SCAN))
+    def test_query_collection_ann(self, vs_1000):
         result = vs_1000._query_collection(self.apple_100_embedding)
         assert len(result) == 10
         assert result[0]["content"] == self.apple_100_text
@@ -154,16 +166,16 @@ class TestVectorStoreFromMethods:
         result = vs_1000._query_collection(self.apple_100_embedding, k=1)
         assert result[0]["content"] == self.apple_100_text
 
-        vs_1000.alter_vector_index(VectorIndex(index_type=IndexType.TREE_SQ))
         result = vs_1000._query_collection(
             self.apple_100_embedding,
             k=5,
-            query_options=QueryOptions(num_partitions=2, search_type=SearchType.ANN),
+            query_options=QueryOptions(
+                num_leaves_to_search=2, search_type=SearchType.ANN
+            ),
         )
         assert len(result) == 5
         assert result[0]["content"] == self.apple_100_text
 
-        vs_1000.alter_vector_index(VectorIndex(index_type=IndexType.TREE_AH))
         result = vs_1000._query_collection(
             self.apple_100_embedding, k=5, filter=f"content != '{self.apple_100_text}'"
         )
@@ -171,7 +183,6 @@ class TestVectorStoreFromMethods:
         assert result[0]["content"] == "apple_154"
 
     def test_similarity_search_with_score_by_vector(self, vs_1000):
-        vs_1000.alter_vector_index(VectorIndex(index_type=IndexType.TREE_AH))
         docs_with_scores = vs_1000.similarity_search_with_score_by_vector(
             self.apple_100_embedding, k=5
         )
@@ -209,12 +220,16 @@ class TestVectorStoreFromMethods:
         docs_with_scores = vs_1000.similarity_search_with_score_by_vector(
             self.apple_100_embedding,
             k=5,
-            query_options=QueryOptions(num_partitions=2, search_type=SearchType.ANN),
+            query_options=QueryOptions(
+                num_leaves_to_search=2, search_type=SearchType.ANN
+            ),
         )
         docs = vs_1000.similarity_search(
             self.apple_100_text,
             k=5,
-            query_options=QueryOptions(num_partitions=2, search_type=SearchType.ANN),
+            query_options=QueryOptions(
+                num_leaves_to_search=2, search_type=SearchType.ANN
+            ),
         )
         assert [doc_with_score[0] for doc_with_score in docs_with_scores] == docs
 
