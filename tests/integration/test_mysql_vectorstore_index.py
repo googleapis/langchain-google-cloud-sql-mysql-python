@@ -21,7 +21,6 @@ from langchain_core.documents import Document
 
 from langchain_google_cloud_sql_mysql import (
     DistanceMeasure,
-    IndexType,
     MySQLEngine,
     MySQLVectorStore,
     SearchType,
@@ -115,66 +114,32 @@ class TestVectorStoreFromMethods:
         yield vs_1000
         vs_1000.drop_vector_index()
 
-    def test_create_and_drop_index(self, vs):
-        vs.apply_vector_index(VectorIndex())
-        assert (
-            vs._get_vector_index_name()
-            == f"{vs.db_name}.{vs.table_name}_langchainvectorindex"
-        )
-        assert vs.query_options.search_type == SearchType.ANN
-        vs.drop_vector_index()
-        assert vs._get_vector_index_name() is None
-        assert vs.query_options.search_type == SearchType.KNN
+    def test_create_index_empty_table_raises_error(self, vs):
+        with pytest.raises(Exception):
+            vs.apply_vector_index(VectorIndex())
 
-    def test_update_index(self, vs):
-        vs.apply_vector_index(VectorIndex())
+    def test_create_and_drop_index(self, vs_1000):
+        vs_1000.apply_vector_index(VectorIndex())
         assert (
-            vs._get_vector_index_name()
-            == f"{vs.db_name}.{vs.table_name}_langchainvectorindex"
+            vs_1000._get_vector_index_name()
+            == f"{vs_1000.table_name}_langchainvectorindex"
         )
-        assert vs.query_options.search_type == SearchType.ANN
-        vs.alter_vector_index(
-            VectorIndex(
-                index_type=IndexType.BRUTE_FORCE_SCAN,
-                distance_measure=DistanceMeasure.L2_SQUARED,
-                num_neighbors=10,
-            )
-        )
-        assert (
-            vs._get_vector_index_name()
-            == f"{vs.db_name}.{vs.table_name}_langchainvectorindex"
-        )
-        vs.drop_vector_index()
-        assert vs.query_options.search_type == SearchType.KNN
-
-    def test_create_and_drop_index_tree_sq(self, vs_1000):
-        vs_1000.apply_vector_index(
-            VectorIndex(
-                name="tree_sq",
-                index_type=IndexType.TREE_SQ,
-                distance_measure=DistanceMeasure.L2_SQUARED,
-                num_partitions=1,
-                num_neighbors=5,
-            )
-        )
-        assert vs_1000._get_vector_index_name() == f"{vs_1000.db_name}.tree_sq"
         assert vs_1000.query_options.search_type == SearchType.ANN
         vs_1000.drop_vector_index()
         assert vs_1000._get_vector_index_name() is None
         assert vs_1000.query_options.search_type == SearchType.KNN
 
-    def test_create_and_drop_index_tree_ah(self, vs_1000):
+    def test_create_and_drop_index_custom_options(self, vs_1000):
         vs_1000.apply_vector_index(
             VectorIndex(
-                name="tree_ah",
-                index_type=IndexType.TREE_AH,
+                name="tree_sq",
                 distance_measure=DistanceMeasure.COSINE,
-                num_partitions=2,
-                num_neighbors=10,
+                num_leaves=5,
             )
         )
-        assert vs_1000._get_vector_index_name() == f"{vs_1000.db_name}.tree_ah"
+        assert vs_1000._get_vector_index_name() == "tree_sq"
         assert vs_1000.query_options.search_type == SearchType.ANN
+        assert vs_1000.query_options.distance_measure == DistanceMeasure.COSINE
         vs_1000.drop_vector_index()
         assert vs_1000._get_vector_index_name() is None
         assert vs_1000.query_options.search_type == SearchType.KNN
