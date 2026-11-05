@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from langchain_core.documents import Document
@@ -74,9 +74,9 @@ class MySQLVectorStore(VectorStore):
                 "Can not use both metadata_columns and ignore_metadata_columns."
             )
         # Get field type information
-        stmt = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table_name}'"
+        stmt = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :table_name"
 
-        results = engine._fetch(stmt)
+        results = engine._fetch(stmt, {"table_name": table_name})
         columns = {}
         for field in results:
             columns[field["COLUMN_NAME"]] = field["DATA_TYPE"]
@@ -143,7 +143,8 @@ class MySQLVectorStore(VectorStore):
 
     def __get_column_names(self) -> List[str]:
         results = self.engine._fetch(
-            f"SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = '{self.db_name}' AND `TABLE_NAME` = '{self.table_name}'"
+            "SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = :db_name AND `TABLE_NAME` = :table_name",
+            {"db_name": self.db_name, "table_name": self.table_name},
         )
         return [r["COLUMN_NAME"] for r in results]
 
@@ -227,11 +228,17 @@ class MySQLVectorStore(VectorStore):
         if not ids:
             return False
 
-        id_list = ", ".join([f"'{id}'" for id in ids])
+        bind_params: Dict[str, Any] = {}
+        param_names: List[str] = []
+        for i, id_val in enumerate(ids):
+            param_name = f"id_{i}"
+            bind_params[param_name] = id_val
+            param_names.append(f":{param_name}")
+        id_list = ", ".join(param_names)
         query = (
             f"DELETE FROM `{self.table_name}` WHERE `{self.id_column}` in ({id_list})"
         )
-        self.engine._execute(query)
+        self.engine._execute(query, bind_params)
         return True
 
     def apply_vector_index(self, vector_index: Optional[VectorIndex] = None):
@@ -241,7 +248,9 @@ class MySQLVectorStore(VectorStore):
         if not vector_index.name:
             vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
         num_leaves = (
-            f" NUM_LEAVES={vector_index.num_leaves}" if vector_index.num_leaves else ""
+            f" NUM_LEAVES={int(vector_index.num_leaves)}"
+            if vector_index.num_leaves
+            else ""
         )
         stmt = (
             f"CREATE VECTOR INDEX `{vector_index.name}` "
@@ -257,9 +266,12 @@ class MySQLVectorStore(VectorStore):
     def _get_vector_index_name(self) -> Optional[str]:
         query = (
             "SELECT INDEX_NAME FROM information_schema.innodb_vector_indexes "
-            f"WHERE TABLE_NAME='{self.db_name}.{self.table_name}';"
+            "WHERE TABLE_NAME=:table_name;"
         )
-        result = self.engine._fetch(query)
+        result = self.engine._fetch(
+            query,
+            params={"table_name": f"{self.db_name}.{self.table_name}"},
+        )
         if result:
             return result[0]["INDEX_NAME"]
         else:
@@ -640,28 +652,29 @@ class MySQLVectorStore(VectorStore):
                 "num_leaves_to_search is not supported for the search type KNN"
             )
 
-        k = k if k else query_options.num_neighbors
+        k = int(k) if k else int(query_options.num_neighbors)
         filter = f"WHERE {filter}" if filter else ""
+        bind_params: Dict[str, Any] = {"embedding": str(embedding)}
         if query_options.search_type == SearchType.KNN:
             distance_function = (
                 f"{query_options.distance_measure.value}_distance"
                 if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
                 else query_options.distance_measure.value
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector('{embedding}')) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
+            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
         else:
             num_leaves_to_search = (
-                f",num_leaves_to_search={query_options.num_leaves_to_search}"
+                f",num_leaves_to_search={int(query_options.num_leaves_to_search)}"
                 if query_options.num_leaves_to_search
                 else ""
             )
-            stmt = f"SELECT {column_query}, APPROX_DISTANCE({self.embedding_column}, string_to_vector('{embedding}'), 'distance_measure={query_options.distance_measure.value}{num_leaves_to_search}') AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
+            stmt = f"SELECT {column_query}, APPROX_DISTANCE({self.embedding_column}, string_to_vector(:embedding), 'distance_measure={query_options.distance_measure.value}{num_leaves_to_search}') AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
 
         # return self.engine._fetch(stmt)
         if map_results:
-            return self.engine._fetch(stmt)
+            return self.engine._fetch(stmt, bind_params)
         else:
-            return self.engine._fetch_rows(stmt)
+            return self.engine._fetch_rows(stmt, bind_params)
 
 
 ### The following is copied from langchain-community until it's moved into core
