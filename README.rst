@@ -34,7 +34,7 @@ steps:
 Supported Cloud SQL Maintenance Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This LangChain integration is only supported for Cloud SQL maintenance versions between **MYSQL_8_0_36.R20240401.03_00** and **MYSQL_8_0_36.R20241208.01_00**
+This LangChain integration is supported for Cloud SQL maintenance versions **MYSQL_8_0_36.R20241208.01_00** or later.
 
 Installation
 ~~~~~~~~~~~~

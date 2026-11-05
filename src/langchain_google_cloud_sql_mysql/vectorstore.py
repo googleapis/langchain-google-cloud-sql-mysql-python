@@ -74,9 +74,9 @@ class MySQLVectorStore(VectorStore):
                 "Can not use both metadata_columns and ignore_metadata_columns."
             )
         # Get field type information
-        stmt = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table_name}'"
+        stmt = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :table_name"
 
-        results = engine._fetch(stmt)
+        results = engine._fetch(stmt, {"table_name": table_name})
         columns = {}
         for field in results:
             columns[field["COLUMN_NAME"]] = field["DATA_TYPE"]
@@ -143,7 +143,8 @@ class MySQLVectorStore(VectorStore):
 
     def __get_column_names(self) -> List[str]:
         results = self.engine._fetch(
-            f"SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = '{self.db_name}' AND `TABLE_NAME` = '{self.table_name}'"
+            "SELECT COLUMN_NAME FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = :db_name AND `TABLE_NAME` = :table_name",
+            {"db_name": self.db_name, "table_name": self.table_name},
         )
         return [r["COLUMN_NAME"] for r in results]
 
@@ -240,63 +241,47 @@ class MySQLVectorStore(VectorStore):
         self.engine._execute(query, bind_params)
         return True
 
-    def apply_vector_index(self, vector_index: VectorIndex):
+    def apply_vector_index(self, vector_index: Optional[VectorIndex] = None):
+        if vector_index is None:
+            vector_index = VectorIndex()
         # Construct the default index name
         if not vector_index.name:
             vector_index.name = f"{self.table_name}_{DEFAULT_INDEX_NAME_SUFFIX}"
-        query_template = f"CALL mysql.create_vector_index('{vector_index.name}', '{self.db_name}.{self.table_name}', '{self.embedding_column}', '{{}}');"
-        self.__exec_apply_vector_index(query_template, vector_index)
+        num_leaves = (
+            f" NUM_LEAVES={int(vector_index.num_leaves)}"
+            if vector_index.num_leaves
+            else ""
+        )
+        stmt = (
+            f"CREATE VECTOR INDEX `{vector_index.name}` "
+            f"ON `{self.db_name}`.`{self.table_name}`(`{self.embedding_column}`) "
+            f"USING SCANN QUANTIZER=SQ8 "
+            f"DISTANCE_MEASURE={vector_index.distance_measure.value}{num_leaves};"
+        )
+        self.engine._execute_outside_tx(stmt)
         # After applying an index to the table, set the query option search type to be ANN
         self.query_options.search_type = SearchType.ANN
+        self.query_options.distance_measure = vector_index.distance_measure
 
-    def alter_vector_index(self, vector_index: VectorIndex):
-        existing_index_name = self._get_vector_index_name()
-        if not existing_index_name:
-            raise ValueError("No existing vector index found.")
-        if not vector_index.name:
-            vector_index.name = existing_index_name.split(".")[1]
-        if existing_index_name.split(".")[1] != vector_index.name:
-            raise ValueError(
-                f"Existing index name {existing_index_name} does not match the new index name {vector_index.name}."
-            )
-        query_template = (
-            f"CALL mysql.alter_vector_index('{existing_index_name}', '{{}}');"
+    def _get_vector_index_name(self) -> Optional[str]:
+        query = (
+            "SELECT INDEX_NAME FROM information_schema.innodb_vector_indexes "
+            "WHERE TABLE_NAME=:table_name;"
         )
-        self.__exec_apply_vector_index(query_template, vector_index)
-
-    def __exec_apply_vector_index(self, query_template: str, vector_index: VectorIndex):
-        index_options = []
-        if vector_index.index_type:
-            index_options.append(f"index_type={vector_index.index_type.value}")
-        if vector_index.distance_measure:
-            index_options.append(
-                f"distance_measure={vector_index.distance_measure.value}"
-            )
-        if vector_index.num_partitions:
-            index_options.append(f"num_partitions={vector_index.num_partitions}")
-        if vector_index.num_neighbors:
-            index_options.append(f"num_neighbors={vector_index.num_neighbors}")
-        index_options_query = ",".join(index_options)
-
-        stmt = query_template.format(index_options_query)
-        self.engine._execute_outside_tx(stmt)
-
-    def _get_vector_index_name(self):
-        query = "SELECT index_name FROM mysql.vector_indexes WHERE table_name=:table_name;"
         result = self.engine._fetch(
             query,
-            params={"table_name": f"{self.db_name}.{self.table_name}"}
+            params={"table_name": f"{self.db_name}.{self.table_name}"},
         )
         if result:
-            return result[0]["index_name"]
+            return result[0]["INDEX_NAME"]
         else:
             return None
 
-    def drop_vector_index(self):
+    def drop_vector_index(self) -> Optional[str]:
         existing_index_name = self._get_vector_index_name()
         if existing_index_name:
             self.engine._execute_outside_tx(
-                f"CALL mysql.drop_vector_index('{existing_index_name}');"
+                f"DROP INDEX `{existing_index_name}` ON `{self.db_name}`.`{self.table_name}`;"
             )
         self.query_options.search_type = SearchType.KNN
         return existing_index_name
@@ -659,27 +644,31 @@ class MySQLVectorStore(VectorStore):
                 column_names[i] = f"vector_to_string({v}) as {self.embedding_column}"
         column_query = ", ".join(column_names)
         query_options = query_options if query_options else self.query_options
-        if query_options.num_partitions and query_options.search_type == SearchType.KNN:
-            raise ValueError("num_partitions is not supported for the search type KNN")
+        if (
+            query_options.num_leaves_to_search
+            and query_options.search_type == SearchType.KNN
+        ):
+            raise ValueError(
+                "num_leaves_to_search is not supported for the search type KNN"
+            )
 
-        k = k if k else query_options.num_neighbors
-        distance_function = (
-            f"{query_options.distance_measure.value}_distance"
-            if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
-            else query_options.distance_measure.value
-        )
+        k = int(k) if k else int(query_options.num_neighbors)
+        filter = f"WHERE {filter}" if filter else ""
         bind_params: Dict[str, Any] = {"embedding": str(embedding)}
         if query_options.search_type == SearchType.KNN:
-            filter = f"WHERE {filter}" if filter else ""
+            distance_function = (
+                f"{query_options.distance_measure.value}_distance"
+                if query_options.distance_measure != DistanceMeasure.DOT_PRODUCT
+                else query_options.distance_measure.value
+            )
             stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
         else:
-            filter = f"AND {filter}" if filter else ""
-            num_partitions = (
-                f",num_partitions={query_options.num_partitions}"
-                if query_options.num_partitions
+            num_leaves_to_search = (
+                f",num_leaves_to_search={int(query_options.num_leaves_to_search)}"
+                if query_options.num_leaves_to_search
                 else ""
             )
-            stmt = f"SELECT {column_query}, {distance_function}({self.embedding_column}, string_to_vector(:embedding)) AS distance FROM `{self.table_name}` WHERE NEAREST({self.embedding_column}) TO (string_to_vector(:embedding), 'num_neighbors={k}{num_partitions}') {filter} ORDER BY distance;"
+            stmt = f"SELECT {column_query}, APPROX_DISTANCE({self.embedding_column}, string_to_vector(:embedding), 'distance_measure={query_options.distance_measure.value}{num_leaves_to_search}') AS distance FROM `{self.table_name}` {filter} ORDER BY distance LIMIT {k};"
 
         # return self.engine._fetch(stmt)
         if map_results:
@@ -734,25 +723,25 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
 
     X = np.array(X)
     Y = np.array(Y)
-    if X.shape[1] != Y.shape[1]:  # type: ignore
+    if X.shape[1] != Y.shape[1]:
         raise ValueError(
-            f"Number of columns in X and Y must be the same. X has shape {X.shape} "  # type: ignore
-            f"and Y has shape {Y.shape}."  # type: ignore
+            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
+            f"and Y has shape {Y.shape}."
         )
     try:
         import simsimd as simd  # type: ignore
 
         X = np.array(X, dtype=np.float32)
         Y = np.array(Y, dtype=np.float32)
-        Z = 1 - simd.cdist(X, Y, metric="cosine")  # type: ignore
+        Z = 1 - simd.cdist(X, Y, metric="cosine")
         if isinstance(Z, float):
             return np.array([Z])
-        return Z  # type: ignore
+        return Z
     except ImportError:
         X_norm = np.linalg.norm(X, axis=1)
         Y_norm = np.linalg.norm(Y, axis=1)
         # Ignore divide by zero errors run time warnings as those are handled below.
         with np.errstate(divide="ignore", invalid="ignore"):
-            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)  # type: ignore
+            similarity = np.dot(X, Y.T) / np.outer(X_norm, Y_norm)
         similarity[np.isnan(similarity) | np.isinf(similarity)] = 0.0
         return similarity
