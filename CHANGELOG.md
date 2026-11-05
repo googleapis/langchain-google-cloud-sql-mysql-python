@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.0](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.3.0...v1.0.0) (2026-11-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* support GA syntax for Cloud SQL MySQL vector search ([#168](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/168))
+
+### Features
+
+* Support GA syntax for Cloud SQL MySQL vector search ([#168](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/168)) ([a1b4b3d](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/a1b4b3dc743f42edcebb8c80c0442efa2c15a111))
+
+
+### Bug Fixes
+
+* Fix vulnerability by using query parameters instead of string formatting ([#159](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/issues/159)) ([4197c9d](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/commit/4197c9de1e43d7d41740c3601f9ae399a88794e0))
+
 ## [0.3.0](https://github.com/googleapis/langchain-google-cloud-sql-mysql-python/compare/v0.2.3...v0.3.0) (2025-01-06)
 
 
